@@ -8,6 +8,10 @@
 
 → Манифест движения: [PHILOSOPHY.md](PHILOSOPHY.md)
 
+→ Параллельное направление **Hayverse** (нодовая среда открытой киновселенной,
+«Weavy × Git»): [docs/HAYVERSE.md](docs/HAYVERSE.md) · прототипы в
+[`hayverse-prototype/`](hayverse-prototype/).
+
 ## Запуск
 
 Один самодостаточный файл — `index.html` (Canvas 2D + Web Audio, без зависимостей).
@@ -53,7 +57,8 @@
 index.html        — игра (актуальная версия)
 PHILOSOPHY.md     — алгоритмический манифест «Заводная орнитология»
 .claude/          — конфиг превью Claude Code (launch.json)
-hayverse-prototype/ — отдельные ранние прототипы (нод-редактор, film-game player)
+hayverse-prototype/ — прототипы Hayverse (нод-редактор, film-game player, граф→плеер)
+docs/HAYVERSE.md   — память направления Hayverse (концепция, план интеграции AI, ноды)
 ```
 
 ---
