@@ -14,7 +14,6 @@
 - `PHILOSOPHY.md` — манифест движения «Заводная орнитология».
 - `docs/DESIGN.md` — дизайн-спека, реализация v3, ориентиры по коду.
 - `.claude/launch.json` — конфиг превью (сервер `proun`).
-- `hayverse-prototype/` — отдельные ранние прототипы, не связаны с игрой.
 
 ## Запуск / превью
 `python -m http.server 4173`, затем `http://localhost:4173`. В Claude Code —
