@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspaces",
-    "build": "npm run build --workspaces"
+    "dev": "npm run build --workspace=@proun/engine && npm run dev --workspace=app",
+    "build": "npm run build --workspace=@proun/engine && npm run build --workspace=app"
   }
 }

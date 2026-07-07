@@ -118,7 +118,7 @@ export function updateEngine(engine: ProunEngine, dt: number) {
   engine.evCd -= dt;
   const wOf = (m: any) => (m && m._wf === engine.frameId) ? m._w : 0;
   if (engine.evCd <= 0) {
-    if (!engine.dominant && domW > CAP_THRESH) {
+    if (!engine.dominant && domW > CAP_THRESH && domBest) {
       engine.dominant = domBest; engine.gestureCapture(domBest); engine.evCd = 0.3;
     } else if (engine.dominant) {
       const wd = wOf(engine.dominant);
@@ -221,7 +221,7 @@ export function updateEngine(engine: ProunEngine, dt: number) {
       ring.headPulse *= Math.exp(-5 * dt);
     }
     const kf = 1 - Math.exp(-2.2 * dt);
-    const activeN = Math.round(o.parts.length * 0.5); // hardcoded particleFrac=0.5
+    const activeN = Math.round(o.parts.length * engine.particleFrac);
     for (let pi = 0; pi < activeN; pi++) {
       const p = o.parts[pi];
       if (!p) continue;

@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "proun",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4173"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--workspace=app", "--", "--port", "4173"],
       "port": 4173
     },
     {

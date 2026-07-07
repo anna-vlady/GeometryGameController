@@ -8,15 +8,19 @@ export function Game() {
   const engine = useEngine(canvasRef);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', backgroundColor: '#F2EBD9' }}>
-      <canvas 
-        ref={canvasRef} 
-        style={{ width: '100%', height: '100%', display: 'block' }} 
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', backgroundColor: '#E7DFCC' }}>
+      <canvas
+        ref={canvasRef}
+        style={{ width: '100%', height: '100%', display: 'block' }}
       />
-      
+
+      <div className="proun-title-tag">
+        ПРОУН<b>&nbsp;//&nbsp;</b>ЗАВОДНАЯ ОРНИТОЛОГИЯ
+      </div>
+
       {/* HUD Container */}
       <HUD engine={engine} />
-      <SettingsPanel />
+      <SettingsPanel engine={engine} />
     </div>
   );
 }

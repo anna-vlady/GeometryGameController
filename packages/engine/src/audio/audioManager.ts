@@ -339,4 +339,14 @@ export class AudioManager {
     this.uiPlrVol = v;
     if (this.plrGain && this.ac) this.plrGain.gain.setTargetAtTime(v, this.ac.currentTime, 0.03);
   }
+
+  // освобождает AudioContext при размонтировании (иначе он продолжает жить
+  // в фоне после ухода со страницы игры — и StrictMode-ремаунт, и обычная
+  // навигация Меню↔Игра иначе оставляют висящий контекст)
+  dispose() {
+    if (this.ac) {
+      this.ac.close().catch(() => {});
+      this.ac = null;
+    }
+  }
 }

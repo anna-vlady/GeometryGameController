@@ -39,6 +39,14 @@ export function newVoice(rnd: () => number, o: Partial<Mech>, pulseMul: number, 
   };
 }
 
+// позиция кольца — чистая функция времени, точная (учитывает tempoMul
+// ритмического персонажа); общая для планировщика звука и рендерера
+export function ringPos(ring: Voice, T: number): number {
+  const spp = ring.pulse / ring.tempoMul;
+  let p = ((T - ring.refT) / spp) % ring.total;
+  return p < 0 ? p + ring.total : p;
+}
+
 export function spawnPart(o: Mech): Particle {
   const ring = o.rings[(Math.random() * o.rings.length) | 0];
   const a = Math.random() * Math.PI * 2;

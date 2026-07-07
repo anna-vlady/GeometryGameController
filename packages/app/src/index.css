@@ -1,111 +1,165 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --paper: #E7DFCC;
+  --paper-panel: #F2EBD9;
+  --ink: #1E1B16;
+  --red: #BF3B2B;
+  --ochre: #C99B3F;
+  --blue: #3F5666;
+  --cream: #F2EBD9;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+* { box-sizing: border-box; }
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html, body {
+  margin: 0; padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 100%;
+  min-height: 100vh;
+}
+
+h1, h2, h3, p { margin: 0; }
+
+/* ── логотип-метка в углу игрового экрана ── */
+.proun-title-tag {
+  position: fixed; top: 16px; left: 22px; z-index: 5; pointer-events: none;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.3em;
+  text-transform: uppercase; color: rgba(30, 27, 22, 0.55);
+}
+.proun-title-tag b { color: var(--red); }
+
+/* ── полноэкранные оверлеи: меню и вершина ── */
+.proun-overlay {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(231, 223, 204, 0.93);
   text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  cursor: pointer;
+}
+.proun-overlay h1 {
+  margin: 0 0 6px 0;
+  font-size: clamp(34px, 6vw, 64px);
+  font-weight: 800; letter-spacing: 0.22em;
+  color: var(--ink); text-transform: uppercase;
+}
+.proun-overlay h1 .red { color: var(--red); }
+.proun-overlay .sub {
+  font-size: 13px; letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--ink); opacity: 0.65; margin-bottom: 36px;
+}
+.proun-overlay .hint {
+  max-width: 580px;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  line-height: 2.1; color: var(--ink); opacity: 0.55; margin-bottom: 30px;
+}
+.proun-overlay .start {
+  font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--red); animation: proun-blink 1.6s ease-in-out infinite;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+}
+@keyframes proun-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+.proun-legend { display: flex; gap: 40px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
+.proun-leg { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.proun-leg span {
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink); opacity: 0.7; line-height: 1.7;
 }
 
-body {
-  margin: 0;
+/* ── HUD-подсказка внизу экрана игры ── */
+.proun-hud-hint {
+  position: fixed; left: 0; right: 0; bottom: 14px; z-index: 5;
+  text-align: center; pointer-events: none;
+  font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+  color: rgba(30, 27, 22, 0.45);
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* ── панель регуляторов ── */
+.proun-panel-toggle {
+  position: absolute; top: 46px; left: 20px;
+  padding: 8px 12px;
+  background: rgba(242, 235, 217, 0.92);
+  border: 1px solid rgba(30, 27, 22, 0.25);
+  border-radius: 8px;
+  font: 700 11px "Segoe UI", sans-serif;
+  letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(30, 27, 22, 0.8);
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(30, 27, 22, 0.12);
 }
+.proun-panel-toggle:hover { background: rgba(242, 235, 217, 1); }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+.proun-panel {
+  position: absolute; top: 46px; left: 20px; width: 300px;
+  max-height: calc(100vh - 66px); overflow-y: auto;
+  background: rgba(242, 235, 217, 0.96);
+  border: 1px solid rgba(30, 27, 22, 0.25);
+  border-radius: 8px;
+  box-shadow: 0 8px 22px rgba(30, 27, 22, 0.16);
+  padding: 14px 16px 16px;
+  font-family: "Segoe UI", sans-serif;
+  font-size: 11px;
+  color: var(--ink);
+  backdrop-filter: blur(3px);
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+.proun-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+  color: rgba(30, 27, 22, 0.85); margin-bottom: 14px;
 }
-p {
-  margin: 0;
+.proun-panel-head .tog { color: var(--red); font-size: 13px; }
+.proun-panel-section {
+  font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  font-size: 10px; color: rgba(30, 27, 22, 0.55); margin: 14px 0 8px;
 }
+.proun-panel-section:first-of-type { margin-top: 0; }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+.proun-ctl { margin-bottom: 11px; }
+.proun-ctl label {
+  display: flex; justify-content: space-between; margin-bottom: 4px;
+  letter-spacing: 0.06em; text-transform: uppercase; font-size: 10px;
 }
+.proun-ctl label b {
+  font-weight: 600; color: rgba(30, 27, 22, 0.5); font-family: "Courier New", monospace;
+}
+.proun-ctl input[type=range] {
+  width: 100%; height: 3px; -webkit-appearance: none; appearance: none;
+  background: rgba(30, 27, 22, 0.22); border-radius: 2px; outline: none; cursor: pointer;
+}
+.proun-ctl input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--red); cursor: pointer; border: 2px solid var(--cream);
+}
+.proun-ctl input[type=range]::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%; background: var(--red);
+  border: 2px solid var(--cream); cursor: pointer;
+}
+.proun-ctl.thumb-ink input::-webkit-slider-thumb { background: var(--ink); }
+.proun-ctl.thumb-blue input::-webkit-slider-thumb { background: var(--blue); }
+.proun-ctl.thumb-ochre input::-webkit-slider-thumb { background: var(--ochre); }
+.proun-ctl.thumb-ink input::-moz-range-thumb { background: var(--ink); }
+.proun-ctl.thumb-blue input::-moz-range-thumb { background: var(--blue); }
+.proun-ctl.thumb-ochre input::-moz-range-thumb { background: var(--ochre); }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.proun-seed-row { display: flex; gap: 8px; align-items: center; }
+.proun-seed-row input[type=number] {
+  width: 90px; padding: 6px 8px; font-family: "Courier New", monospace; font-size: 11px;
+  border: 1px solid rgba(30, 27, 22, 0.3); border-radius: 4px; background: var(--paper);
+  color: var(--ink);
+}
+.proun-btn {
+  padding: 6px 10px; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid rgba(30, 27, 22, 0.35); border-radius: 4px;
+  background: rgba(30, 27, 22, 0.06); color: var(--ink); cursor: pointer;
+  font-family: "Segoe UI", sans-serif;
+}
+.proun-btn:hover { background: rgba(30, 27, 22, 0.12); }
+.proun-panel-close {
+  background: none; border: none; cursor: pointer; color: var(--ink); font-size: 14px;
 }

@@ -1,8 +1,9 @@
 import { Mech, Voice } from '../world/types';
 import { Player, FxState } from '../physics/types';
-import { mixColor, smoothstep, clamp01 } from '../core/utils';
-import { ENERGY_COLOR, CREAM, RED, INK, PAPER, PAPER_LIGHT, PAPER_DARK } from '../world/constants';
-import { SPAWN, SUMMIT_Y } from '../physics/constants';
+import { mixColor, clamp01 } from '../core/utils';
+import { ENERGY_COLOR, CREAM, RED, INK, PAPER_LIGHT, PAPER_DARK } from '../world/constants';
+import { SUMMIT_Y } from '../physics/constants';
+import { ringPos } from '../world/generator';
 import { shadowAnd, drawGlyph, drawBead, prounShape, drawDecor, drawFar } from './shapes';
 
 const FAR_FACTOR = 0.35;
@@ -189,9 +190,8 @@ export class Renderer {
       }
       ctx.globalAlpha = 1;
 
-      // Head
-      // TODO: need ringPos equivalent logic here
-      const p = ((T - ring.refT) / ring.pulse) % ring.total; // Approximated ringPos
+      // Head — играющая головка партитуры (точная позиция, с учётом tempoMul)
+      const p = ringPos(ring, T);
       const ha = (ring.phase0 || 0) + ring.dir! * (p / ring.total) * TAU;
       let [hx, hy] = pt(ha, rr);
       const hdx = px - hx, hdy = py - hy, hd = Math.hypot(hdx, hdy);
@@ -266,7 +266,7 @@ export class Renderer {
     ctx.restore();
   }
 
-  draw(t: number, T: number, player: Player, fx: FxState, chunks: Map<string, any>, farChunks: Map<string, any>, dominant: Mech | null, tanks: number[], collectFlash: number[], worldSeed: number) {
+  draw(t: number, T: number, player: Player, fx: FxState, chunks: Map<string, any>, farChunks: Map<string, any>, dominant: Mech | null, tanks: number[], collectFlash: number[], worldSeed: number, particleFrac = 0.7) {
     const { ctx, W, H, DPR } = this;
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
     ctx.globalAlpha = 1;
@@ -336,7 +336,7 @@ export class Renderer {
         for (const o of ch.mechs) {
           const col = ENERGY_COLOR[o.energy || 0];
           ctx.fillStyle = col; ctx.strokeStyle = col;
-          const activeN = Math.round(o.parts.length * 0.5);
+          const activeN = Math.round(o.parts.length * particleFrac);
           for (let pi = 0; pi < activeN; pi++) {
             const p = o.parts[pi];
             const fade = Math.min(1, p.life * 1.5);
