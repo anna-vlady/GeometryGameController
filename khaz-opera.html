@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ԽԱԶ ՕՊԵՐԱ — Khaz Opera</title>
+<style>
+  :root{
+    /* Ameriabank-inspired: тёплый эспрессо + фирменный оранж + золото/крем */
+    --ink:#160c05; --ink2:#2a1810; --night:#160c05;
+    --orange:#F15A22; --orange-lt:#FF8A4C; --amber:#F0A52B;
+    --gold:#E8B84B; --gold2:#F6DCA8; --vermilion:#F15A22;
+    --verd:#C9531C; --sky:#F0A52B; --parch:#F4E8D2;
+  }
+  html,body{
+    margin:0;padding:0;height:100%;overflow:hidden;background:var(--night);
+    font-family:"Noto Serif Armenian","Sylfaen","Mshtakan","Georgia",serif;
+    color:var(--parch);user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;
+    touch-action:none;
+  }
+  canvas{display:block;position:fixed;inset:0;}
+
+  /* ----- HUD ----- */
+  #hud{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;justify-content:space-between;
+       align-items:flex-start;padding:16px 20px;pointer-events:none;}
+  #mode{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);opacity:.8;line-height:1.9;}
+  #mode b{color:var(--gold2);font-weight:600;}
+  #tools{display:flex;gap:10px;pointer-events:auto;}
+  .btn{font-family:inherit;cursor:pointer;background:rgba(226,181,58,.08);color:var(--gold);
+       border:1px solid rgba(226,181,58,.35);border-radius:2px;padding:8px 12px;font-size:11px;
+       letter-spacing:.16em;text-transform:uppercase;transition:.2s;backdrop-filter:blur(2px);}
+  .btn:hover{background:rgba(226,181,58,.18);color:var(--gold2);}
+  .btn.on{background:var(--orange);color:#fff;border-color:var(--orange);}
+
+  #foot{position:fixed;bottom:104px;left:0;right:0;z-index:5;text-align:center;padding:6px;pointer-events:none;
+        font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--parch);opacity:.45;}
+
+  /* ----- палитра хазов ----- */
+  #khazbar{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;gap:8px;justify-content:center;
+    flex-wrap:nowrap;overflow-x:auto;padding:10px 14px 14px;
+    background:linear-gradient(0deg,rgba(22,12,5,.96) 30%,rgba(22,12,5,0));}
+  #khazbar::-webkit-scrollbar{height:5px;} #khazbar::-webkit-scrollbar-thumb{background:rgba(226,181,58,.3);border-radius:3px;}
+  .kz{flex:0 0 auto;cursor:pointer;min-width:74px;display:flex;flex-direction:column;align-items:center;gap:3px;
+    padding:7px 10px;border:1px solid rgba(226,181,58,.3);border-radius:4px;background:rgba(226,181,58,.05);
+    color:var(--parch);font-family:inherit;transition:.16s;}
+  .kz:hover{background:rgba(226,181,58,.15);transform:translateY(-2px);}
+  .kz.on{background:var(--orange);border-color:var(--orange);color:#fff;box-shadow:0 0 24px rgba(241,90,34,.5);}
+  .kz svg{width:30px;height:23px;}
+  .kz svg path{fill:none;stroke:var(--gold);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;}
+  .kz.on svg path{stroke:#fff;}
+  .kz .w{font-size:13px;font-weight:600;}
+  .kz .nm{font-size:8px;letter-spacing:.12em;text-transform:uppercase;opacity:.6;}
+  .kz.on .nm{opacity:.85;}
+  .kz.hint{animation:kzhint 2.2s ease-in-out infinite;}
+  @keyframes kzhint{0%,100%{box-shadow:0 0 0 0 rgba(241,90,34,0);transform:translateY(0);}
+    50%{box-shadow:0 0 18px 2px rgba(241,90,34,.5);transform:translateY(-3px);}}
+  #c{cursor:grab;} #c.grabbing{cursor:grabbing;}
+
+  /* ----- intro overlay ----- */
+  .ov{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;text-align:center;background:radial-gradient(120% 90% at 50% 35%,
+      rgba(86,42,16,.55),rgba(20,11,5,.94) 70%);transition:opacity .8s ease;backdrop-filter:blur(3px);}
+  .ov.hidden{opacity:0;pointer-events:none;}
+  .ov h1{margin:0;font-size:clamp(52px,13vw,140px);font-weight:700;letter-spacing:.18em;
+     color:var(--orange);line-height:1;text-shadow:0 4px 48px rgba(241,90,34,.45);}
+  .ov h1 .v{color:var(--gold2);}
+  .ov .lat{font-size:clamp(13px,2.4vw,18px);letter-spacing:.5em;text-transform:uppercase;
+     color:var(--parch);opacity:.7;margin:18px 0 6px;}
+  .ov .sub{font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--gold2);opacity:.85;margin-bottom:34px;}
+  .legend{display:flex;gap:46px;flex-wrap:wrap;justify-content:center;margin-bottom:40px;max-width:720px;}
+  .leg{display:flex;flex-direction:column;align-items:center;gap:10px;width:150px;}
+  .leg .ic{width:40px;height:40px;opacity:.85;}
+  .leg span{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--parch);opacity:.65;line-height:1.8;}
+  .start{font-family:inherit;cursor:pointer;background:transparent;color:var(--orange);
+     border:1.5px solid var(--orange);border-radius:3px;padding:15px 40px;font-size:14px;letter-spacing:.34em;
+     text-transform:uppercase;transition:.25s;animation:pulse 2.4s ease-in-out infinite;}
+  .start:hover{background:var(--orange);color:#fff;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(241,90,34,0);}50%{box-shadow:0 0 38px 2px rgba(241,90,34,.35);}}
+  .credit{position:fixed;bottom:16px;font-size:9.5px;letter-spacing:.26em;text-transform:uppercase;opacity:.4;}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="mode">ՁԱՅՆ՝ <b id="modeName">ԼԱ ՓՈՔՐ ՆԵՐԴԱՇՆԱԿ</b><br><span style="opacity:.6">A harmonic minor · 8-րդ ձայն</span></div>
+  <div id="tools">
+    <button class="btn" id="bAuto" title="ինքնաերգ (A)">ԻՆՔՆԱԵՐԳ</button>
+    <button class="btn" id="bDrone" title="դամ / бурдон (D)">ԴԱՄ</button>
+    <button class="btn" id="bMute" title="ձայն (M)">🔊</button>
+  </div>
+</div>
+
+<div id="foot">Ընտրիր ԽԱԶ ներքևից՝ խումբը երգում է բառը · քաշիր երգչին՝ մեղեդին · վերջին վանկը ձգվում է &nbsp;·&nbsp; <span style="opacity:.7">1–8 խազեր · A ինքնաերգ · D դամ · space շունչ</span></div>
+<div id="khazbar"></div>
+
+<div class="ov" id="intro">
+  <h1>Խ<span class="v">Ա</span>Զ</h1>
+  <div class="lat">KHAZ OPERA</div>
+  <div class="sub">հայկական ձայնի խաղ · armenian neume choir</div>
+  <div class="legend">
+    <div class="leg"><svg class="ic" viewBox="0 0 40 40"><path d="M20 6v28M20 6l-7 8M20 6l7 8M20 34l-7-8M20 34l7-8" stroke="#F15A22" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>Քաշիր վեր ու վար<br>բարձրությունը</span></div>
+    <div class="leg"><svg class="ic" viewBox="0 0 40 40"><path d="M6 20h28M6 20l8-7M6 20l8 7M34 20l-8-7M34 20l-8 7" stroke="#F15A22" stroke-width="2" fill="none" stroke-linecap="round"/></svg><span>Ձախ ու աջ՝<br>ձայնավորը</span></div>
+    <div class="leg"><svg class="ic" viewBox="0 0 40 40"><path d="M8 26c4-12 8-12 12 0s8 12 12 0" stroke="#E8B84B" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="20" cy="14" r="2.5" fill="#F15A22"/></svg><span>Չորս ձայն՝<br>մեկ խորան</span></div>
+  </div>
+  <button class="start" id="startBtn">ՍԿՍԵԼ ▶</button>
+  <div class="credit">Բ Ա Ց Ի Ր &nbsp; Ձ Ա Յ Ն Ը</div>
+</div>
+
+<script>
+"use strict";
+//============================ ОБЩЕЕ ============================
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+let W=0,H=0,DPR=1;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const clamp=(x,a,b)=>x<a?a:x>b?b:x;
+const TAU=Math.PI*2;
+
+//============================ МУЗЫКА ============================
+const ROOT = 45;                       // A2
+const SCALE = [0,2,3,5,7,8,11];        // гармонический минор (ув.2 — арм. колорит)
+const midiToFreq = m => 440*Math.pow(2,(m-69)/12);
+function scaleMidi(step){
+  const oct=Math.floor(step/7), deg=((step%7)+7)%7;
+  return ROOT + 12*oct + SCALE[deg];
+}
+// гласные: форманты F1,F2,F3 (Гц)  Ա Ե Ի Ո ՈՒ
+const VOWELS = [
+  {l:'Ա', f:[ 720,1240,2600]},
+  {l:'Ե', f:[ 500,1760,2480]},
+  {l:'Ի', f:[ 300,2300,3010]},
+  {l:'Ո', f:[ 460, 820,2810]},
+  {l:'ՈՒ',f:[ 330, 720,2520]},
+];
+function vowelFormants(vf){
+  const i=clamp(Math.floor(vf),0,VOWELS.length-2), fr=vf-i;
+  const a=VOWELS[i].f, b=VOWELS[i+1].f;
+  return [a[0]+(b[0]-a[0])*fr, a[1]+(b[1]-a[1])*fr, a[2]+(b[2]-a[2])*fr];
+}
+
+//============================ ФОНЕМЫ (для пения слов) ============================
+// форманты гласных по символу (+ шва @)
+const VFORM = { a:[720,1240,2600], e:[500,1760,2480], i:[300,2300,3010],
+                o:[460,820,2810], u:[330,720,2520], '@':[560,1480,2520] };
+const VMOUTH = { a:0, e:1, i:2, o:3, u:4, '@':1 }; // индекс формы рта
+// согласные: kind управляет жестом синтеза (взрыв/щель/носовой/плавный/трель/глайд)
+const CONS = {
+  p:{kind:'stop', f:900, q:1.4, lvl:0.45}, t:{kind:'stop', f:3400,q:1.4, lvl:0.55},
+  k:{kind:'stop', f:1700,q:1.2, lvl:0.5},
+  b:{kind:'vstop',f:600, q:1.4, lvl:0.30}, d:{kind:'vstop',f:2600,q:1.4, lvl:0.32},
+  g:{kind:'vstop',f:1500,q:1.2, lvl:0.30},
+  s:{kind:'fric', f:6500,q:3.0, lvl:0.45}, S:{kind:'fric', f:2500,q:2.4, lvl:0.45}, // շ
+  x:{kind:'fric', f:1300,q:1.4, lvl:0.45}, h:{kind:'fric', f:1100,q:0.7, lvl:0.30}, // խ, հ
+  f:{kind:'fric', f:4200,q:1.5, lvl:0.40},
+  v:{kind:'vfric',f:1000,q:1.2, lvl:0.25}, z:{kind:'vfric',f:5500,q:3.0, lvl:0.30},
+  Z:{kind:'vfric',f:2200,q:2.4, lvl:0.30}, G:{kind:'vfric',f:1150,q:1.2, lvl:0.28}, // ժ, ղ
+  c:{kind:'aff',  f:5800,q:3.0, lvl:0.50}, C:{kind:'aff',  f:2500,q:2.4, lvl:0.50}, // ծ/ց, չ
+  j:{kind:'aff',  f:2300,q:2.4, lvl:0.45}, // ջ
+  m:{kind:'nasal',nf:[280,1100,2400]}, n:{kind:'nasal',nf:[320,1650,2600]},
+  l:{kind:'liq',  nf:[360,1300,2700]}, r:{kind:'trill',nf:[500,1300,2500]},
+  y:{kind:'glide',nf:[300,2200,3000]}, w:{kind:'glide',nf:[330,720,2520]},
+};
+// невмы (хазы) — SVG-пути для палитры (viewBox 0 0 32 32)
+const NEUMES = [
+  'M7 22 Q16 5 25 13',                                  // сур (взлёт)
+  'M6 16 Q11 7 16 16 T26 16',                           // исон (волна)
+  'M7 11 Q16 27 25 19',                                 // спуск
+  'M10 23 Q5 8 17 9 Q27 10 21 18 Q17 23 13 18',         // паройк (завиток)
+  'M8 21 Q12 7 16 16 Q20 25 24 11',                     // двойной
+  'M7 22 L25 10 M19 10 L25 10 L25 16',                  // долгий (стрела)
+  'M6 21 L12 11 L18 21 L24 11',                         // шешт (зигзаг)
+  'M8 13 Q16 8 24 13 M20 16 a3 3 0 1 0 0.1 0',          // кет (точка с дугой)
+];
+// хаз → армянская фраза. say: фонемы по слогам (через -), text: армянские слоги
+const KHAZ = [
+  {name:'Բութ',        word:'Ալէլուիա', say:'a-le-lu-i-a', text:['Ա','լէ','լու','ի','ա']},
+  {name:'Սուր',        word:'Ողորմեա',  say:'vo-Gor-me-a', text:['Ո','ղոր','մե','ա']},
+  {name:'Շեշտ',        word:'Ամէն',     say:'a-men',       text:['Ա','մէն']},
+  {name:'Պարոյկ',      word:'Մարիամ',   say:'ma-ri-am',    text:['Մա','րի','ամ']},
+  {name:'Խօսրովային',  word:'Հայաստան', say:'ha-ya-stan',  text:['Հա','յա','ստան']},
+  {name:'Ուղորակ',     word:'Սարի',     say:'sa-ri',       text:['Սա','րի']},
+  {name:'Ծուռ',        word:'Նանի',     say:'na-ni',       text:['Նա','նի']},
+  {name:'Երկար',       word:'Յար ջան',  say:'yar-jan',     text:['Յար','ջան']},
+];
+
+// палитра (фирстиль Америабанка × армянский орнамент)
+const PAL = {
+  bg:['#1c0f06','#3a2110','#150b04'],
+  orange:'#F15A22', orangeLt:'#FF8A4C', amber:'#F0A52B',
+  gold:'#E8B84B', gold2:'#F6DCA8', cream:'#F4E8D2', maroon:'#5a1d10'
+};
+// четыре голоса — тёплое оранжево-золотое семейство
+const VOICES = [
+  {name:'ԲԱՍ',     lo:40, hi:57, fScale:0.86, col:'#B5431B'}, // терракота
+  {name:'ՏԵՆՈՐ',   lo:47, hi:64, fScale:0.96, col:'#F15A22'}, // оранж Америя
+  {name:'ԱԼՏ',     lo:54, hi:72, fScale:1.07, col:'#F0A52B'}, // янтарь
+  {name:'ՍՈՊՐԱՆՈ', lo:60, hi:79, fScale:1.18, col:'#F4CE86'}, // палевое золото
+];
+// диапазоны в шагах лада
+VOICES.forEach(v=>{
+  let lo=99,hi=-99;
+  for(let s=-30;s<=40;s++){const m=scaleMidi(s); if(m>=v.lo&&m<=v.hi){lo=Math.min(lo,s);hi=Math.max(hi,s);} }
+  v.loStep=lo; v.hiStep=hi; v.midStep=Math.round((lo+hi)/2);
+});
+
+//============================ ЗВУК ============================
+let ac=null, masterDry, reverbIn, comp, masterGain, started=false, singing=false, muted=false, noiseBuf=null;
+let droneGain=null, droneOn=true;
+const va=[]; // аудио-узлы по голосам
+// настройки живут между сессиями
+const store={
+  get(){ try{return JSON.parse(localStorage.getItem('khazopera')||'{}');}catch(e){return {};} },
+  set(o){ try{localStorage.setItem('khazopera',JSON.stringify(o));}catch(e){} }
+};
+const prefs=store.get(); muted=!!prefs.muted; droneOn=prefs.drone!==false;
+let playedOnce=!!prefs.played;
+function savePrefs(){ store.set({muted, drone:droneOn, played:playedOnce}); }
+
+function makeNoise(){
+  const len=Math.floor(ac.sampleRate*1.5), b=ac.createBuffer(1,len,ac.sampleRate);
+  const d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=Math.random()*2-1; return b;
+}
+function makeImpulse(sec,decay){
+  const rate=ac.sampleRate, len=Math.floor(rate*sec);
+  const buf=ac.createBuffer(2,len,rate);
+  for(let ch=0;ch<2;ch++){const d=buf.getChannelData(ch);
+    for(let i=0;i<len;i++){ d[i]=(Math.random()*2-1)*Math.pow(1-i/len,decay); } }
+  return buf;
+}
+function buildVoice(v,idx){
+  const o1=ac.createOscillator(); o1.type='sawtooth';
+  const o2=ac.createOscillator(); o2.type='sawtooth'; o2.detune.value=-7;
+  const sub=ac.createOscillator(); sub.type='sine';
+  const src=ac.createGain(); src.gain.value=0.5;
+  const subg=ac.createGain(); subg.gain.value=0.10;
+  o1.connect(src); o2.connect(src); sub.connect(subg); subg.connect(src);
+  // вибрато
+  const lfo=ac.createOscillator(); lfo.type='sine'; lfo.frequency.value=5.1+Math.random()*0.7;
+  const lfoG=ac.createGain(); lfoG.gain.value=6.5; // центы
+  lfo.connect(lfoG); lfoG.connect(o1.detune); lfoG.connect(o2.detune);
+  // форманты (3 полосовых)
+  const mix=ac.createGain(); mix.gain.value=1;
+  const Q=[7,10,11], FG=[1.0,0.55,0.19];
+  const filt=[0,1,2].map(k=>{
+    const f=ac.createBiquadFilter(); f.type='bandpass'; f.Q.value=Q[k];
+    const g=ac.createGain(); g.gain.value=FG[k];
+    src.connect(f); f.connect(g); g.connect(mix); return f;
+  });
+  // тёплый прямой тракт
+  const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=1250;
+  const lpg=ac.createGain(); lpg.gain.value=0.075; src.connect(lp); lp.connect(lpg); lpg.connect(mix);
+  // артикуляция (быстрая огибающая слогов) → уровень голоса
+  const artGain=ac.createGain(); artGain.gain.value=1; mix.connect(artGain);
+  const amp=ac.createGain(); amp.gain.value=0; artGain.connect(amp);
+  // согласные — шумовой тракт
+  const noise=ac.createBufferSource(); noise.buffer=noiseBuf; noise.loop=true;
+  const consBP=ac.createBiquadFilter(); consBP.type='bandpass'; consBP.frequency.value=3000; consBP.Q.value=2;
+  const consGain=ac.createGain(); consGain.gain.value=0;
+  noise.connect(consBP); consBP.connect(consGain); consGain.connect(amp);
+  // стерео-расстановка хора: бас слева … сопрано справа
+  const pan=ac.createStereoPanner?ac.createStereoPanner():null;
+  if(pan){ pan.pan.value=[-0.32,-0.11,0.11,0.32][idx]||0; amp.connect(pan); pan.connect(masterDry); }
+  else amp.connect(masterDry);
+  const rs=ac.createGain(); rs.gain.value=0.55; amp.connect(rs); rs.connect(reverbIn);
+  o1.start(); o2.start(); sub.start(); lfo.start(); noise.start();
+  return {o1,o2,sub,lfo,lfoG,filt,amp,artGain,consBP,consGain,curStep:null,curVowel:null,curAmp:0};
+}
+function initAudio(){
+  if(ac) return;
+  ac = new (window.AudioContext||window.webkitAudioContext)();
+  masterGain=ac.createGain(); masterGain.gain.value=muted?0:0.9;
+  comp=ac.createDynamicsCompressor();
+  comp.threshold.value=-15; comp.ratio.value=3.2; comp.attack.value=0.01; comp.release.value=0.25;
+  comp.connect(masterGain); masterGain.connect(ac.destination);
+  masterDry=ac.createGain(); masterDry.gain.value=0.82; masterDry.connect(comp);
+  const conv=ac.createConvolver(); conv.buffer=makeImpulse(3.4,2.5);
+  const revG=ac.createGain(); revG.gain.value=0.55; conv.connect(revG); revG.connect(comp);
+  reverbIn=ac.createGain(); reverbIn.gain.value=1; reverbIn.connect(conv);
+  noiseBuf=makeNoise();
+  VOICES.forEach((v,i)=>va.push(buildVoice(v,i)));
+  buildDrone();
+  if(droneOn) droneGain.gain.setTargetAtTime(0.055, ac.currentTime+0.4, 1.4); // дам всплывает
+}
+//---- дам (бурдон) — тихий фон, как дудук за хором ----
+function buildDrone(){
+  droneGain=ac.createGain(); droneGain.gain.value=0;
+  const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=480; lp.Q.value=0.6;
+  [[ROOT,'sine',0.55],[ROOT,'sawtooth',0.32],[ROOT+7,'sawtooth',0.20]].forEach(([m,type,g])=>{
+    const o=ac.createOscillator(); o.type=type; o.frequency.value=midiToFreq(m);
+    if(type==='sawtooth') o.detune.value=Math.random()*7-3.5;
+    const og=ac.createGain(); og.gain.value=g; o.connect(og); og.connect(lp); o.start();
+  });
+  const wob=ac.createOscillator(); wob.frequency.value=0.11;          // медленное дыхание дама
+  const wg=ac.createGain(); wg.gain.value=0.010; wob.connect(wg); wg.connect(droneGain.gain); wob.start();
+  lp.connect(droneGain); droneGain.connect(masterDry);
+  const rs=ac.createGain(); rs.gain.value=0.9; droneGain.connect(rs); rs.connect(reverbIn);
+}
+// высота — ведёт frame() от перетаскивания/гармонии
+function setPitch(i, step){
+  const a=va[i]; if(!a||a.curStep===step) return; const t=ac.currentTime;
+  const f=midiToFreq(scaleMidi(step));
+  a.o1.frequency.setTargetAtTime(f,t,0.06); a.o2.frequency.setTargetAtTime(f,t,0.06);
+  a.sub.frequency.setTargetAtTime(f/2,t,0.06); a.curStep=step;
+  // живое вибрато: на новой ноте гаснет и разгоняется, как у настоящего горла
+  const vg=a.lfoG.gain, vf=a.lfo.frequency;
+  vg.cancelScheduledValues(t); vg.setValueAtTime(Math.min(vg.value,2.2),t);
+  vg.linearRampToValueAtTime(8.2,t+0.75);
+  vf.cancelScheduledValues(t); vf.setValueAtTime(4.3,t);
+  vf.linearRampToValueAtTime(5.3+Math.random()*0.6,t+0.9);
+}
+// придыхание при захвате голоса («х» перед нотой)
+function aspirate(i){
+  const a=va[i]; if(!a) return; const t=ac.currentTime;
+  a.consBP.frequency.setValueAtTime(950,t); a.consBP.Q.setValueAtTime(0.7,t);
+  a.consGain.gain.cancelScheduledValues(t);
+  a.consGain.gain.setValueAtTime(0.14,t); a.consGain.gain.setTargetAtTime(0,t,0.06);
+}
+// громкость голоса (ведущий/фон, дыхание) — медленно
+function setLevel(i, amp){
+  const a=va[i]; if(!a) return;
+  if(Math.abs(a.curAmp-amp)>0.003){ a.amp.gain.setTargetAtTime(amp,ac.currentTime,0.09); a.curAmp=amp; }
+}
+// гласный от перетаскивания (только когда не поётся фраза)
+function setVowelDrag(i, vowel){
+  const a=va[i]; if(!a) return; const t=ac.currentTime;
+  if(a.curVowel===null || Math.abs(a.curVowel-vowel)>0.02){
+    const F=vowelFormants(vowel), sc=VOICES[i].fScale;
+    a.filt[0].frequency.setTargetAtTime(F[0]*sc,t,0.05);
+    a.filt[1].frequency.setTargetAtTime(F[1]*sc,t,0.05);
+    a.filt[2].frequency.setTargetAtTime(F[2]*sc,t,0.05); a.curVowel=vowel; }
+}
+// вернуть артикуляцию в нейтраль (после фразы / на «вдохе»)
+function neutralizeArticulation(){
+  if(!ac) return; const t=ac.currentTime;
+  for(const a of va){
+    [a.artGain.gain,a.consGain.gain,a.filt[0].frequency,a.filt[1].frequency,a.filt[2].frequency]
+      .forEach(p=>{ p.cancelScheduledValues(t); p.setValueAtTime(p.value,t); });
+    a.artGain.gain.setTargetAtTime(1,t,0.05);
+    a.consGain.gain.setTargetAtTime(0,t,0.04);
+    a.curVowel=null;
+  }
+}
+
+//============================ ПЕНИЕ ФРАЗ (фонемный секвенсор) ============================
+const VKEYS='aeiou@';
+function flattenPhrase(say){
+  const seq=[], syls=say.split('-');
+  syls.forEach((syl,si)=>{ for(const ch of syl){
+    if(VKEYS.includes(ch)) seq.push({t:'V',c:ch,stress:si>=syls.length-1});
+    else seq.push({t:'C',c:ch});
+  }});
+  return seq;
+}
+const SUSTAIN_C=new Set(['m','n','l','r','G','v']); // что можно тянуть голосом
+function lastHoldIndex(seq){
+  for(let k=seq.length-1;k>=0;k--) if(seq[k].t==='V'||SUSTAIN_C.has(seq[k].c)) return k;
+  return seq.length-1;
+}
+function rampF(a,sc,F,t){
+  a.filt[0].frequency.linearRampToValueAtTime(F[0]*sc,t+0.05);
+  a.filt[1].frequency.linearRampToValueAtTime(F[1]*sc,t+0.05);
+  a.filt[2].frequency.linearRampToValueAtTime(F[2]*sc,t+0.05);
+}
+function schedVowel(a,sc,vch,t,hold,stress){
+  rampF(a,sc,VFORM[vch]||VFORM['@'],t);
+  a.consGain.gain.linearRampToValueAtTime(0,t+0.03);
+  a.artGain.gain.linearRampToValueAtTime(1.0,t+0.05);
+  return hold ? t : t+(stress?0.30:0.22);
+}
+function schedCons(a,sc,c,t,hold){
+  const C=CONS[c]; if(!C) return t+0.04; const k=C.kind;
+  if(k==='stop'||k==='vstop'||k==='aff'){
+    const sil=k==='vstop'?0.016:0.028;
+    a.artGain.gain.linearRampToValueAtTime(k==='vstop'?0.25:0.0,t+sil);
+    a.consBP.frequency.setValueAtTime(C.f,t+sil); a.consBP.Q.setValueAtTime(C.q,t+sil);
+    a.consGain.gain.linearRampToValueAtTime(0,t+sil);
+    a.consGain.gain.linearRampToValueAtTime(C.lvl,t+sil+0.010);
+    const end=t+sil+(k==='aff'?0.085:0.045);
+    a.consGain.gain.linearRampToValueAtTime(0,end); return end;
+  }
+  if(k==='fric'||k==='vfric'){
+    a.artGain.gain.linearRampToValueAtTime(k==='vfric'?0.5:0.07,t+0.03);
+    a.consBP.frequency.setValueAtTime(C.f,t); a.consBP.Q.setValueAtTime(C.q,t);
+    a.consGain.gain.linearRampToValueAtTime(C.lvl,t+0.03);
+    if(hold) return t;
+    a.consGain.gain.linearRampToValueAtTime(0,t+0.12); return t+0.12;
+  }
+  if(k==='nasal'){
+    rampF(a,sc,C.nf,t); a.consGain.gain.linearRampToValueAtTime(0,t+0.02);
+    a.artGain.gain.linearRampToValueAtTime(0.7,t+0.03);
+    return hold ? t : t+0.10;
+  }
+  if(k==='liq'){
+    rampF(a,sc,C.nf,t); a.artGain.gain.linearRampToValueAtTime(0.9,t+0.03);
+    a.consGain.gain.linearRampToValueAtTime(0,t+0.02);
+    return hold ? t : t+0.07;
+  }
+  if(k==='trill'){
+    rampF(a,sc,C.nf,t); a.consGain.gain.linearRampToValueAtTime(0,t+0.02);
+    let tt=t; for(let n=0;n<3;n++){ a.artGain.gain.linearRampToValueAtTime(0.45,tt+0.018);
+      a.artGain.gain.linearRampToValueAtTime(0.95,tt+0.036); tt+=0.036; }
+    if(hold){ a.artGain.gain.linearRampToValueAtTime(0.82,tt+0.02); return tt+0.02; }
+    return tt;
+  }
+  if(k==='glide'){
+    rampF(a,sc,C.nf,t); a.artGain.gain.linearRampToValueAtTime(0.85,t+0.03);
+    a.consGain.gain.linearRampToValueAtTime(0,t+0.02);
+    return hold ? t : t+0.05;
+  }
+  return t+0.05;
+}
+function scheduleVoicePhrase(i,seq,t0){
+  const a=va[i], sc=VOICES[i].fScale, T=ac.currentTime;
+  [a.artGain.gain,a.consGain.gain,a.filt[0].frequency,a.filt[1].frequency,a.filt[2].frequency]
+    .forEach(p=>{ p.cancelScheduledValues(T); p.setValueAtTime(p.value,T); });
+  a.artGain.gain.linearRampToValueAtTime(a.artGain.gain.value,t0); // держим до старта
+  const holdK=lastHoldIndex(seq); let t=t0;
+  for(let k=0;k<=holdK;k++){ const p=seq[k], hold=(k===holdK);
+    t = p.t==='V' ? schedVowel(a,sc,p.c,t,hold,p.stress) : schedCons(a,sc,p.c,t,hold); }
+  a.curVowel=null;
+}
+// длительности (зеркало секвенсора) — для подсветки текста и формы рта
+function phonDur(p,hold){
+  if(p.t==='V') return hold?0:(p.stress?0.30:0.22);
+  const C=CONS[p.c]; if(!C) return 0.04;
+  switch(C.kind){
+    case 'stop': return 0.073; case 'aff': return 0.113; case 'vstop': return 0.061;
+    case 'fric': case 'vfric': return hold?0:0.12;
+    case 'nasal': return hold?0:0.10; case 'liq': return hold?0:0.07;
+    case 'trill': return 0.110; case 'glide': return hold?0:0.05;
+  }
+  return 0.05;
+}
+function buildLyricTimeline(kz){
+  const seq=flattenPhrase(kz.say), holdK=lastHoldIndex(seq);
+  const times=[]; let t=0, seg=0; const syls=kz.say.split('-');
+  kz.text.forEach((txt,sy)=>{
+    let mv=1; for(const ch of syls[sy]) if(VKEYS.includes(ch)) mv=VMOUTH[ch];
+    times.push({txt, t0:t, mv});
+    for(const ch of syls[sy]){
+      const p = VKEYS.includes(ch)?{t:'V',c:ch,stress:sy>=kz.text.length-1}:{t:'C',c:ch};
+      t += phonDur(p, seg===holdK); seg++;
+    }
+  });
+  lyricSyls=kz.text; lyricTimes=times; lyricStartWall=performance.now()+60;
+}
+
+//============================ ГАРМОНИЯ ============================
+// ведущий держит верх трезвучия; остальные — органум снизу, плавное голосоведение
+function harmonize(leadIdx, leadStep){
+  const chord=[leadStep, leadStep-2, leadStep-4]; // тоника / терция / квинта снизу
+  const out=[];
+  for(let f=0; f<4; f++){
+    if(f===leadIdx){ out[f]=leadStep; continue; }
+    const v=VOICES[f], prev=cur.steps[f];
+    let best=null, bestCost=1e9;
+    for(const c of chord){
+      for(let oct=-2; oct<=2; oct++){
+        const s=c+7*oct;
+        if(s<v.loStep||s>v.hiStep) continue;
+        const cost=Math.abs(s-prev) + Math.abs(s-v.midStep)*0.25;
+        if(cost<bestCost){ bestCost=cost; best=s; }
+      }
+    }
+    out[f]= best!==null ? best : clamp(leadStep, v.loStep, v.hiStep);
+  }
+  return out;
+}
+
+//============================ СОСТОЯНИЕ ============================
+const cur = { steps:VOICES.map(v=>v.midStep), vowel:2.0, leadIdx:0 };
+let dragging=false, autoMode=false;
+let phraseActive=false, currentKhaz=-1, lyricSyls=null, lyricTimes=null, lyricStartWall=0, lyricCur=0;
+const disp = VOICES.map((v,i)=>({x:0,y:0,py:0,vy:0,amp:0,vowel:2,phase:Math.random()*TAU,
+  nextBlink:0,blinkStart:-1e9}));
+// геометрия поля
+let playTop=0, playBottom=0, bandTop=0, bandBot=0;
+const laneW = ()=>W/4;
+const laneX = i=>W*(i+0.5)/4;
+function yToStep(i,y){
+  const t=clamp((playBottom-y)/(playBottom-playTop),0,1);
+  return Math.round(lerp(VOICES[i].loStep, VOICES[i].hiStep, t));
+}
+function stepToY(i,step){
+  const t=(step-VOICES[i].loStep)/(VOICES[i].hiStep-VOICES[i].loStep);
+  return playBottom - t*(playBottom-playTop);
+}
+function xToVowel(i,x){
+  const norm=clamp((x-laneX(i))/(laneW()*0.45),-1,1);
+  return clamp((norm+1)/2*(VOWELS.length-1),0,VOWELS.length-1);
+}
+
+//============================ ХАЗ-СЛЕД ============================
+const trail=[]; // {t, step, vowel, type}
+let lastOnsetStep=null, trailTimer=0;
+function pushTrail(now){
+  const ld=cur.leadIdx, step=cur.steps[ld];
+  let type='hold';
+  if(lastOnsetStep!==null){
+    const d=step-lastOnsetStep;
+    if(d>2) type='orn'; else if(d>0) type='up';
+    else if(d<-2) type='orn'; else if(d<0) type='down'; else type='hold';
+  }
+  lastOnsetStep=step;
+  // нормируем высоту по объединённому диапазону
+  trail.push({t:now, step, vowel:cur.vowel, type, leadIdx:ld});
+  while(trail.length>140) trail.shift();
+}
+
+//============================ РЕНДЕР ============================
+let arev=0, dust=[];
+function initDust(){ dust=[]; for(let i=0;i<70;i++) dust.push({x:Math.random(),y:Math.random(),
+  s:Math.random()*1.6+0.4, sp:Math.random()*0.00006+0.00002, ph:Math.random()*TAU}); }
+
+function drawBackground(t){
+  // тёплый эспрессо-градиент
+  const g=ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,PAL.bg[0]); g.addColorStop(.5,PAL.bg[1]); g.addColorStop(1,PAL.bg[2]);
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // фирменное оранжевое свечение в центре
+  const rg=ctx.createRadialGradient(W/2,H*0.5,0,W/2,H*0.5,Math.max(W,H)*0.62);
+  rg.addColorStop(0,'rgba(241,90,34,.13)'); rg.addColorStop(1,'rgba(241,90,34,0)');
+  ctx.fillStyle=rg; ctx.fillRect(0,0,W,H);
+  // аревахач — колесо вечности
+  ctx.save(); ctx.translate(W/2,H*0.52); ctx.rotate(arev);
+  const R=Math.min(W,H)*0.42, arms=12;
+  ctx.globalAlpha=0.06; ctx.strokeStyle=PAL.amber; ctx.lineWidth=2;
+  for(let a=0;a<arms;a++){
+    ctx.save(); ctx.rotate(a/arms*TAU);
+    ctx.beginPath(); ctx.moveTo(R*0.12,0);
+    ctx.quadraticCurveTo(R*0.62,R*0.0, R*0.86,R*0.30);
+    ctx.quadraticCurveTo(R*0.70,R*0.12, R*0.92,R*0.02);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,R*(0.3+a*0.0),0,0); ctx.stroke();
+    ctx.restore();
+  }
+  // концентрические круги
+  for(let r=0.30;r<1.0;r+=0.18){ ctx.globalAlpha=0.04; ctx.beginPath(); ctx.arc(0,0,R*r,0,TAU); ctx.stroke(); }
+  ctx.restore();
+  // золотая пыль
+  ctx.fillStyle=PAL.gold2;
+  for(const d of dust){ d.y-=d.sp; if(d.y<0){d.y=1;d.x=Math.random();}
+    ctx.globalAlpha=0.10+0.10*Math.sin(t*0.001+d.ph);
+    ctx.beginPath(); ctx.arc(d.x*W,d.y*H,d.s,0,TAU); ctx.fill(); }
+  ctx.globalAlpha=1;
+  drawBorder();
+}
+// плетёнка (хачкарный жгут) — одна сторона
+function braid(ax,ay,bx,by){
+  const len=Math.hypot(bx-ax,by-ay), ux=(bx-ax)/len, uy=(by-ay)/len, nx=-uy, ny=ux;
+  const period=28, amp=5, steps=Math.max(12,Math.floor(len/3));
+  const strand=(phase,color,w,al)=>{ ctx.globalAlpha=al; ctx.strokeStyle=color; ctx.lineWidth=w; ctx.beginPath();
+    for(let i=0;i<=steps;i++){ const d=i/steps*len, off=Math.sin(d/period*TAU+phase)*amp;
+      const x=ax+ux*d+nx*off, y=ay+uy*d+ny*off; i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke(); };
+  strand(0, PAL.orange, 2.4, 0.6);
+  strand(Math.PI, PAL.gold, 2.0, 0.5);
+  ctx.globalAlpha=0.6; ctx.fillStyle=PAL.gold2;
+  for(let d=period/4; d<len; d+=period/2){ const x=ax+ux*d, y=ay+uy*d; ctx.beginPath(); ctx.arc(x,y,1.4,0,TAU); ctx.fill(); }
+}
+// угловая розетка (8 лепестков)
+function rosette(cx,cy,R){
+  ctx.save(); ctx.translate(cx,cy); ctx.globalAlpha=0.85;
+  ctx.fillStyle=PAL.orange;
+  for(let k=0;k<8;k++){ ctx.rotate(TAU/8); ctx.beginPath(); ctx.ellipse(R*0.72,0,R*0.5,R*0.18,0,0,TAU); ctx.fill(); }
+  ctx.fillStyle=PAL.gold2; ctx.beginPath(); ctx.arc(0,0,R*0.36,0,TAU); ctx.fill();
+  ctx.fillStyle=PAL.maroon; ctx.beginPath(); ctx.arc(0,0,R*0.16,0,TAU); ctx.fill();
+  ctx.restore();
+}
+function drawBorder(){
+  const m=18, l=m, t=m, r=W-m, b=H-m;
+  ctx.save(); ctx.lineCap='round';
+  // тонкая внешняя рамка
+  ctx.globalAlpha=0.3; ctx.strokeStyle=PAL.gold; ctx.lineWidth=1.4;
+  ctx.strokeRect(m-6,m-6,W-2*m+12,H-2*m+12);
+  // плетёный жгут по периметру
+  braid(l,t, r,t); braid(l,b, r,b); braid(l,t, l,b); braid(r,t, r,b);
+  ctx.restore();
+  // розетки в углах
+  for(const [cx,cy] of [[m,m],[W-m,m],[m,H-m],[W-m,H-m]]) rosette(cx,cy,11);
+}
+
+// ---- хаз-глифы (невмы) ----
+function drawKhaz(x,y,type,scale,color,alpha){
+  ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
+  ctx.strokeStyle=color; ctx.globalAlpha=alpha; ctx.lineWidth=1.8;
+  ctx.lineCap='round'; ctx.lineJoin='round'; ctx.beginPath();
+  if(type==='up'){
+    ctx.moveTo(-6,5); ctx.quadraticCurveTo(0,-7,6,-4);
+    ctx.moveTo(6,-4); ctx.quadraticCurveTo(9,-3,7,1);
+  }else if(type==='down'){
+    ctx.moveTo(-6,-5); ctx.quadraticCurveTo(0,7,6,4);
+    ctx.moveTo(6,4); ctx.quadraticCurveTo(9,3,7,-1);
+  }else if(type==='hold'){
+    ctx.moveTo(-7,0); ctx.quadraticCurveTo(-3.5,-5,0,0); ctx.quadraticCurveTo(3.5,5,7,0);
+  }else{ // orn — завиток
+    ctx.moveTo(-6,4); ctx.quadraticCurveTo(-7,-6,2,-6);
+    ctx.quadraticCurveTo(8,-6,5,1); ctx.quadraticCurveTo(3,5,0,3);
+  }
+  ctx.stroke();
+  if(type==='orn'){ ctx.beginPath(); ctx.arc(-2,-1,1.3,0,TAU); ctx.fillStyle=color; ctx.fill(); }
+  ctx.restore();
+}
+
+function drawTrail(now){
+  // полоса-рукопись сверху
+  const y0=bandTop, y1=bandBot;
+  ctx.save();
+  ctx.strokeStyle='rgba(226,181,58,.14)'; ctx.lineWidth=1;
+  for(let k=0;k<3;k++){ const yy=lerp(y0,y1,k/2); ctx.beginPath(); ctx.moveTo(40,yy); ctx.lineTo(W-40,yy); ctx.stroke(); }
+  const speed=0.045; // px/ms
+  const right=W-50, left=50;
+  // диапазон высот всех голосов
+  const allLo=Math.min(...VOICES.map(v=>v.loStep)), allHi=Math.max(...VOICES.map(v=>v.hiStep));
+  let prev=null;
+  for(const p of trail){
+    const x=right-(now-p.t)*speed; if(x<left||x>right) continue;
+    const t=(p.step-allLo)/(allHi-allLo);
+    const y=lerp(y1-6,y0+6,clamp(t,0,1));
+    if(prev){ ctx.strokeStyle='rgba(244,217,138,.5)'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(prev.x,prev.y); ctx.lineTo(x,y); ctx.stroke(); }
+    prev={x,y};
+  }
+  // хаз-глифы на онсетах (через один)
+  for(let i=0;i<trail.length;i+=3){
+    const p=trail[i]; const x=right-(now-p.t)*speed; if(x<left||x>right) continue;
+    const t=(p.step-allLo)/(allHi-allLo);
+    const y=lerp(y1-6,y0+6,clamp(t,0,1));
+    drawKhaz(x,y-12,p.type,1.15,PAL.orange,0.85*clamp((x-left)/130,0.15,1)); // глифы тают у края
+  }
+  ctx.restore();
+}
+
+function drawVoice(i,now){
+  const v=VOICES[i], d=disp[i];
+  const r=Math.min(laneW()*0.30, 64);
+  const breathe=1+0.04*Math.sin(now*0.001*6+d.phase);
+  const rad=r*(0.78+d.amp*1.4)*breathe;
+  const x=d.x, y=d.y;
+  // нимб
+  if(d.amp>0.01){
+    ctx.save(); ctx.globalAlpha=clamp(d.amp*5,0,0.7);
+    const hg=ctx.createRadialGradient(x,y-rad*0.1,rad*0.6,x,y-rad*0.1,rad*1.9);
+    hg.addColorStop(0,'rgba(255,178,92,.55)'); hg.addColorStop(1,'rgba(255,178,92,0)');
+    ctx.fillStyle=hg; ctx.beginPath(); ctx.arc(x,y-rad*0.1,rad*1.9,0,TAU); ctx.fill();
+    // золотое кольцо-ореол
+    ctx.globalAlpha=clamp(d.amp*6,0,0.9); ctx.strokeStyle=PAL.gold2; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y-rad*0.55,rad*0.95,Math.PI*1.08,Math.PI*1.92); ctx.stroke();
+    ctx.restore();
+  }
+  // тень
+  ctx.save(); ctx.globalAlpha=0.3; ctx.fillStyle='#0a1233';
+  ctx.beginPath(); ctx.ellipse(x,y+rad*1.05,rad*0.8,rad*0.22,0,0,TAU); ctx.fill(); ctx.restore();
+  // тело — капля-«драгоценность» (+squash&stretch, когда тянут)
+  ctx.save();
+  const sy=(dragging&&i===cur.leadIdx)?clamp(1+Math.abs(d.vy||0)*0.02,1,1.26):1;
+  const sqx=1/Math.sqrt(sy);
+  ctx.translate(x,y); ctx.scale(sqx,sy); ctx.translate(-x,-y);
+  const bg=ctx.createRadialGradient(x-rad*0.3,y-rad*0.4,rad*0.2,x,y,rad*1.15);
+  bg.addColorStop(0,'#fff7e6'); bg.addColorStop(0.35,v.col); bg.addColorStop(1,shade(v.col,-0.45));
+  ctx.fillStyle=bg;
+  ctx.beginPath();
+  ctx.moveTo(x,y-rad*1.18);
+  ctx.bezierCurveTo(x+rad*1.05,y-rad*1.0, x+rad*1.05,y+rad*0.9, x,y+rad*1.05);
+  ctx.bezierCurveTo(x-rad*1.05,y+rad*0.9, x-rad*1.05,y-rad*1.0, x,y-rad*1.18);
+  ctx.fill();
+  ctx.strokeStyle=shade(v.col,-0.55); ctx.lineWidth=2; ctx.stroke();
+  // хаз-орнамент на теле
+  drawKhaz(x,y+rad*0.45,'hold',rad*0.05,shade(v.col,-0.6),0.5);
+  // глаза: следят за курсором/солистом, моргают, блаженно прикрываются на долгой ноте
+  if(!d.nextBlink) d.nextBlink=now+1500+Math.random()*3500;
+  if(now>=d.nextBlink){ d.blinkStart=now; d.nextBlink=now+2300+Math.random()*4300; }
+  const bp=(now-d.blinkStart)/230;
+  let lid=(bp>=0&&bp<1)?Math.sin(clamp(bp,0,1)*Math.PI):0;
+  lid=Math.max(lid, bliss*0.55);
+  const eo=rad*0.30, ey0=y-rad*0.30, er=rad*0.10;
+  let lx,ly; const fresh=now-lastPtrMove<4000;
+  if(dragging&&i===cur.leadIdx){ lx=ptr.x; ly=ptr.y-80; }
+  else if(fresh){ lx=ptr.x; ly=ptr.y; }
+  else if(i!==cur.leadIdx){ lx=disp[cur.leadIdx].x; ly=disp[cur.leadIdx].y; }
+  else { lx=x; ly=y-160; }
+  const ddx=lx-x, ddy=ly-ey0, dl=Math.max(1,Math.hypot(ddx,ddy));
+  const km=Math.min(er*0.42, dl*0.06)/dl, ox=ddx*km, oy=ddy*km;
+  const ry=Math.max(0.6, er*(1-lid*0.94));
+  ctx.fillStyle='#1a1408';
+  ctx.beginPath(); ctx.ellipse(x-eo+ox,ey0+oy,er,ry,0,0,TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x+eo+ox,ey0+oy,er,ry,0,0,TAU); ctx.fill();
+  if(lid<0.5){ ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(x-eo+ox+er*0.3,ey0+oy-er*0.3,er*0.33,0,TAU); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+eo+ox+er*0.3,ey0+oy-er*0.3,er*0.33,0,TAU); ctx.fill(); }
+  // рот — форма по гласной
+  const shp=vowelMouth(d.vowel);
+  const open=clamp(d.amp*5,0.06,1);
+  const mw=rad*0.5*shp.w, mh=rad*0.5*shp.h*open + rad*0.04;
+  ctx.fillStyle='#3a1206';
+  ctx.beginPath(); ctx.ellipse(x,y+rad*0.18,mw,mh,0,0,TAU); ctx.fill();
+  ctx.fillStyle='#7a2c12';
+  ctx.beginPath(); ctx.ellipse(x,y+rad*0.18+mh*0.35,mw*0.7,mh*0.45,0,0,TAU); ctx.fill();
+  ctx.restore();
+  // подпись голоса
+  ctx.save();
+  ctx.fillStyle = i===cur.leadIdx ? PAL.gold2 : 'rgba(244,232,210,.55)';
+  ctx.font='600 12px "Noto Serif Armenian","Sylfaen",serif'; ctx.textAlign='center';
+  ctx.fillText(v.name, x, playBottom+26);
+  ctx.restore();
+  // текущая гласная над ведущим
+  if(i===cur.leadIdx && d.amp>0.02){
+    ctx.save(); ctx.fillStyle=PAL.orange; ctx.globalAlpha=clamp(d.amp*6,0,1);
+    ctx.font='700 22px "Noto Serif Armenian","Sylfaen",serif'; ctx.textAlign='center';
+    const vi=Math.round(d.vowel);
+    ctx.fillText(VOWELS[vi].l, x, y-rad*1.5);
+    ctx.restore();
+  }
+}
+function vowelMouth(vf){
+  const tab=[ {w:1.05,h:1.15}, {w:1.15,h:0.62}, {w:1.2,h:0.32}, {w:0.72,h:0.95}, {w:0.5,h:0.7} ];
+  const i=clamp(Math.floor(vf),0,tab.length-2), fr=vf-i;
+  return {w:lerp(tab[i].w,tab[i+1].w,fr), h:lerp(tab[i].h,tab[i+1].h,fr)};
+}
+function shade(hex,amt){
+  const n=parseInt(hex.slice(1),16); let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  if(amt<0){r*=1+amt;g*=1+amt;b*=1+amt;} else {r+=(255-r)*amt;g+=(255-g)*amt;b+=(255-b)*amt;}
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+// ---- текст поющейся фразы (караоке) ----
+function drawLyrics(now){
+  if(!phraseActive || !lyricSyls) return;
+  const y=H*0.235, base=Math.min(38, W*0.038), gap=base*0.5;
+  ctx.save(); ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font=`600 ${base}px "Noto Serif Armenian","Sylfaen",serif`;
+  const wid=lyricSyls.map(s=>ctx.measureText(s).width);
+  const total=wid.reduce((a,b)=>a+b,0)+gap*(lyricSyls.length-1);
+  let x=W/2-total/2;
+  for(let s=0;s<lyricSyls.length;s++){
+    const active=s===lyricCur, sung=s<lyricCur, cx=x+wid[s]/2;
+    const pulse=active?1.14+0.04*Math.sin(now*0.006):1;
+    ctx.save(); ctx.translate(cx,y); ctx.scale(pulse,pulse);
+    ctx.fillStyle= active?'#f6dd95' : sung?'rgba(226,181,58,.6)' : 'rgba(239,227,196,.32)';
+    if(active){ ctx.shadowColor='rgba(241,90,34,.6)'; ctx.shadowBlur=22; }
+    ctx.fillText(lyricSyls[s],0,0); ctx.restore();
+    x+=wid[s]+gap;
+  }
+  // имя хаза под словом
+  if(currentKhaz>=0){ ctx.shadowBlur=0; ctx.fillStyle='rgba(226,181,58,.55)';
+    ctx.font='600 11px "Noto Serif Armenian","Sylfaen",serif';
+    ctx.fillText('— '+KHAZ[currentKhaz].name+' —', W/2, y+base*0.92); }
+  ctx.restore();
+}
+//============================ ЦИКЛ ============================
+let lastT=performance.now(), lastPtrMove=-1e9, bliss=0;
+const sparks=[];
+function burst(x,y,col){
+  for(let k=0;k<16;k++){ const a=Math.random()*TAU, sp=0.03+Math.random()*0.11;
+    sparks.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-0.05,life:1,col:k%3?col:PAL.gold2}); }
+}
+// концертный авто-режим: хор сам поёт хазы, распевает финалы, дышит между фразами
+const autoSt={mode:'idle', t:0, plan:[], pi:0, lastK:-1};
+function autoTick(now){
+  if(dragging){ autoSt.t=Math.max(autoSt.t, now+2500); return; } // игрок ведёт — не мешаем
+  if(now<autoSt.t){
+    if(autoSt.mode==='sing'){ // мелодический распев тянущегося финала
+      while(autoSt.pi<autoSt.plan.length && now>=autoSt.plan[autoSt.pi].t){
+        const mv=autoSt.plan[autoSt.pi++], v=VOICES[cur.leadIdx];
+        cur.steps[cur.leadIdx]=clamp(mv.s,v.loStep,v.hiStep); recomputeHarmony(); } }
+    return;
+  }
+  if(autoSt.mode==='sing' && Math.random()<0.35){ // вдох между фразами
+    breath(); autoSt.mode='rest'; autoSt.t=now+700+Math.random()*900; return; }
+  let k; do{ k=Math.floor(Math.random()*KHAZ.length); }while(k===autoSt.lastK);
+  autoSt.lastK=k;
+  cur.leadIdx=(cur.leadIdx+1+Math.floor(Math.random()*3))%4;   // солист переходит по кругу
+  const v=VOICES[cur.leadIdx];
+  cur.steps[cur.leadIdx]=clamp(v.midStep+Math.floor(Math.random()*5)-2, v.loStep, v.hiStep);
+  recomputeHarmony();
+  startPhrase(k);
+  const lastT0=lyricTimes[lyricTimes.length-1].t0*1000, susStart=now+lastT0+300;
+  autoSt.plan=[]; autoSt.pi=0;
+  let s=cur.steps[cur.leadIdx];
+  const n=2+Math.floor(Math.random()*3);                       // 2–4 хода распева
+  for(let j=0;j<n;j++){ s+=(Math.random()<0.5?-1:1)*(Math.random()<0.25?2:1);
+    autoSt.plan.push({t:susStart+j*(550+Math.random()*350), s}); }
+  autoSt.mode='sing';
+  autoSt.t=susStart+n*800+900+Math.random()*1500;
+}
+function frame(now){
+  const dt=Math.min(50, now-lastT); lastT=now;
+  // самовосстановление, если страница загрузилась с нулевым вьюпортом
+  if(W!==window.innerWidth || H!==window.innerHeight){ if(window.innerWidth) resize(); }
+  arev += dt*0.00004;
+
+  if(autoMode && started) autoTick(now);
+
+  // хаз-след пишется только когда хор поёт
+  if(started && singing){ trailTimer-=dt; if(trailTimer<=0){ trailTimer=110; pushTrail(now); } }
+
+  // текущий пропеваемый гласный (рот + подсветка слога) и «блаженство» сустейна
+  let mouthV=cur.vowel; bliss=0;
+  if(phraseActive && lyricTimes){
+    const el=(now-lyricStartWall)/1000; let c=0;
+    for(let s=0;s<lyricTimes.length;s++) if(el>=lyricTimes[s].t0) c=s;
+    lyricCur=c; mouthV=lyricTimes[c].mv;
+    const last=lyricTimes[lyricTimes.length-1].t0;
+    if(el>last+0.5) bliss=clamp((el-last-0.5)/2.2,0,1);
+  }
+  // обновляем звук + дисплей
+  for(let i=0;i<4;i++){
+    const d=disp[i];
+    let amp=0, step=cur.steps[i];
+    if(singing){ amp = (i===cur.leadIdx)?(dragging?0.155:0.125):(dragging?0.105:0.088);
+      if(bliss>0) amp*=1+0.09*bliss*Math.sin(now*0.0016+i*1.7); } // хор «дышит» на долгой ноте
+    // целевые экранные координаты (+лёгкое парение, когда не тянут)
+    let tx, ty;
+    if(dragging && i===cur.leadIdx){ tx=clamp(ptr.x, laneX(i)-laneW()*0.42, laneX(i)+laneW()*0.42); ty=ptr.y; }
+    else { tx=laneX(i)+(mouthV-2)/2*laneW()*0.14 + Math.sin(now*0.0007+d.phase)*laneW()*0.022;
+           ty=stepToY(i,step) + Math.sin(now*0.0011+d.phase*1.3)*4; }
+    d.py=d.y;
+    d.x=lerp(d.x,tx,0.18); d.y=lerp(d.y,ty,0.16);
+    d.vy=lerp(d.vy||0, d.y-d.py, 0.35);
+    d.amp=lerp(d.amp,amp,0.12); d.vowel=lerp(d.vowel,mouthV,0.18);
+    if(started){ setPitch(i,step); setLevel(i,amp); if(!phraseActive) setVowelDrag(i,cur.vowel); }
+  }
+
+  // отрисовка
+  drawBackground(now);
+  if(started){ drawTrail(now); drawLyrics(now); }
+  for(let i=0;i<4;i++) drawVoice(i,now);
+  // искры запева
+  for(let k=sparks.length-1;k>=0;k--){ const s=sparks[k];
+    s.life-=dt*0.0011; if(s.life<=0){ sparks.splice(k,1); continue; }
+    s.x+=s.vx*dt; s.y+=s.vy*dt; s.vy+=0.00022*dt;
+    ctx.globalAlpha=s.life*0.9; ctx.fillStyle=s.col;
+    ctx.beginPath(); ctx.arc(s.x,s.y,1.5+1.6*s.life,0,TAU); ctx.fill(); }
+  ctx.globalAlpha=1;
+
+  requestAnimationFrame(frame);
+}
+function recomputeHarmony(){
+  const h=harmonize(cur.leadIdx, cur.steps[cur.leadIdx]);
+  for(let i=0;i<4;i++) if(i!==cur.leadIdx) cur.steps[i]=h[i];
+}
+
+//============================ ВВОД ============================
+const ptr={x:0,y:0};
+function nearestLane(x){ return clamp(Math.floor(x/(W/4)),0,3); }
+function pointerDown(e){
+  if(!started) return;
+  cv.setPointerCapture && cv.setPointerCapture(e.pointerId);
+  ptr.x=e.clientX; ptr.y=e.clientY; lastPtrMove=performance.now();
+  cur.leadIdx=nearestLane(ptr.x);
+  if(!singing && !phraseActive) aspirate(cur.leadIdx); // лёгкое «х» перед нотой
+  dragging=true; singing=true;
+  cv.classList.add('grabbing');
+  applyLead();
+}
+function pointerMove(e){
+  ptr.x=e.clientX; ptr.y=e.clientY; lastPtrMove=performance.now(); // глаза следят всегда
+  if(dragging) applyLead();
+}
+function pointerUp(){ dragging=false; cv.classList.remove('grabbing'); } // хор держит аккорд
+function applyLead(){
+  const i=cur.leadIdx;
+  cur.steps[i]=yToStep(i,ptr.y);
+  if(!phraseActive) cur.vowel=xToVowel(i,ptr.x); // во фразе гласной владеет хаз
+  recomputeHarmony();
+}
+cv.addEventListener('pointerdown',pointerDown);
+cv.addEventListener('pointermove',pointerMove);
+window.addEventListener('pointerup',pointerUp);
+window.addEventListener('pointercancel',pointerUp);
+
+window.addEventListener('keydown',e=>{
+  if(e.code==='Space'){ e.preventDefault(); breath(); } // շունչ — дыхание
+  else if(e.key==='a'||e.key==='A'){ toggleAuto(); }
+  else if(e.key==='m'||e.key==='M'){ toggleMute(); }
+  else if(e.key==='d'||e.key==='D'){ toggleDrone(); }
+  else if(e.key>='1'&&e.key<='8'){ const k=+e.key-1; if(k<KHAZ.length) startPhrase(k); }
+});
+function breath(){
+  if(ac){ const t=ac.currentTime;               // мягкий выдох, не обрыв
+    for(const a of va){ a.amp.gain.cancelScheduledValues(t);
+      a.amp.gain.setValueAtTime(a.amp.gain.value,t);
+      a.amp.gain.setTargetAtTime(0,t,0.35); a.curAmp=0; }
+    neutralizeArticulation(); }
+  singing=false; dragging=false; phraseActive=false; currentKhaz=-1;
+  lyricSyls=null; updateKhazUI(); }
+
+//============================ UI ============================
+const intro=document.getElementById('intro');
+document.getElementById('startBtn').addEventListener('click',()=>{
+  initAudio(); started=true; intro.classList.add('hidden');
+  if(ac.state==='suspended') ac.resume();
+});
+const bAuto=document.getElementById('bAuto'), bMute=document.getElementById('bMute'),
+      bDrone=document.getElementById('bDrone');
+function toggleAuto(){ autoMode=!autoMode; bAuto.classList.toggle('on',autoMode);
+  if(autoMode && started){ autoSt.mode='idle'; autoSt.t=0; } }
+function toggleMute(){ muted=!muted; bMute.textContent=muted?'🔇':'🔊'; savePrefs();
+  if(masterGain) masterGain.gain.setTargetAtTime(muted?0:0.9, ac.currentTime,0.05); }
+function toggleDrone(){ droneOn=!droneOn; bDrone.classList.toggle('on',droneOn); savePrefs();
+  if(ac&&droneGain) droneGain.gain.setTargetAtTime(droneOn?0.055:0, ac.currentTime, 0.7); }
+bAuto.addEventListener('click',toggleAuto);
+bMute.addEventListener('click',toggleMute);
+bDrone.addEventListener('click',toggleDrone);
+bMute.textContent=muted?'🔇':'🔊';
+bDrone.classList.toggle('on',droneOn);
+
+// ---- палитра хазов: каждый поёт армянскую фразу ----
+function startPhrase(idx){
+  if(!started){ initAudio(); started=true; intro.classList.add('hidden'); }
+  if(ac.state==='suspended') ac.resume();
+  currentKhaz=idx; phraseActive=true; singing=true;
+  const seq=flattenPhrase(KHAZ[idx].say), t0=ac.currentTime+0.06;
+  // ведущий вступает первым, остальные на волосок позже — хор живой, не машина
+  for(let i=0;i<4;i++) scheduleVoicePhrase(i,seq,t0+(i===cur.leadIdx?0:0.012+0.006*i));
+  buildLyricTimeline(KHAZ[idx]);
+  if(!playedOnce){ playedOnce=true; savePrefs();
+    khazbar.querySelectorAll('.kz.hint').forEach(b=>b.classList.remove('hint')); }
+  if(W>0){ const d=disp[cur.leadIdx]; burst(d.x,d.y-14,VOICES[cur.leadIdx].col); }
+  updateKhazUI();
+}
+const khazbar=document.getElementById('khazbar');
+KHAZ.forEach((kz,idx)=>{
+  const b=document.createElement('button'); b.className='kz'; b.dataset.idx=idx;
+  b.innerHTML=`<svg viewBox="0 0 32 32"><path d="${NEUMES[idx%NEUMES.length]}"/></svg>`+
+              `<span class="w">${kz.word}</span><span class="nm">${idx+1} · ${kz.name}</span>`;
+  b.addEventListener('click',()=>startPhrase(idx));
+  khazbar.appendChild(b);
+});
+if(!playedOnce && khazbar.firstChild) khazbar.firstChild.classList.add('hint'); // подсказка новичку
+function updateKhazUI(){
+  khazbar.querySelectorAll('.kz').forEach(b=>b.classList.toggle('on',+b.dataset.idx===currentKhaz));
+}
+
+//============================ РАЗМЕР ============================
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  bandTop=H*0.085; bandBot=H*0.18;
+  playTop=H*0.32; playBottom=H*0.74;
+  // инициализируем дисплей-координаты
+  for(let i=0;i<4;i++){ disp[i].x=laneX(i); disp[i].y=stepToY(i,cur.steps[i]); }
+  initDust();
+}
+window.addEventListener('resize',resize);
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -71,12 +71,76 @@
     text-transform: uppercase; color: rgba(30, 27, 22, 0.55);
   }
   #title-tag b { color: #BF3B2B; }
+
+  /* панель регулировок */
+  #panel {
+    position: fixed; top: 44px; left: 22px; z-index: 6;
+    width: 196px; padding: 12px 14px 14px;
+    background: rgba(242, 235, 217, 0.92);
+    border: 1px solid rgba(30, 27, 22, 0.25);
+    border-radius: 8px;
+    box-shadow: 0 8px 22px rgba(30, 27, 22, 0.12);
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(30, 27, 22, 0.7);
+    backdrop-filter: blur(3px);
+  }
+  #panel.collapsed .panel-body { display: none; }
+  #panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; font-weight: 700; letter-spacing: 0.22em;
+    color: rgba(30, 27, 22, 0.8); user-select: none;
+  }
+  #panel-head .tog { color: #BF3B2B; font-size: 13px; }
+  .panel-body { margin-top: 12px; }
+  .ctl { margin-bottom: 11px; }
+  .ctl:last-child { margin-bottom: 2px; }
+  .ctl label { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .ctl label b { font-weight: 600; color: rgba(30, 27, 22, 0.5); font-family: "Courier New", monospace; }
+  .ctl input[type=range] {
+    width: 100%; height: 3px; -webkit-appearance: none; appearance: none;
+    background: rgba(30, 27, 22, 0.22); border-radius: 2px; outline: none; cursor: pointer;
+  }
+  .ctl input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: #BF3B2B; cursor: pointer; border: 2px solid #F2EBD9;
+  }
+  .ctl input[type=range]::-moz-range-thumb {
+    width: 13px; height: 13px; border-radius: 50%; background: #BF3B2B; border: 2px solid #F2EBD9; cursor: pointer;
+  }
+  .ctl.obj input::-webkit-slider-thumb { background: #1E1B16; }
+  .ctl.plr input::-webkit-slider-thumb { background: #3F5666; }
+  .ctl.part input::-webkit-slider-thumb { background: #C99B3F; }
+  .ctl.obj input::-moz-range-thumb { background: #1E1B16; }
+  .ctl.plr input::-moz-range-thumb { background: #3F5666; }
+  .ctl.part input::-moz-range-thumb { background: #C99B3F; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 
 <div id="title-tag">ПРОУН<b>&nbsp;//&nbsp;</b>ЗАВОДНАЯ ОРНИТОЛОГИЯ</div>
+
+<div id="panel">
+  <div id="panel-head" onclick="togglePanel()"><span>Регуляторы</span><span class="tog">▾</span></div>
+  <div class="panel-body">
+    <div class="ctl master">
+      <label>Мастер <b id="v-master">85</b></label>
+      <input type="range" min="0" max="100" value="85" oninput="setMasterVol(this.value)">
+    </div>
+    <div class="ctl obj">
+      <label>Объекты <b id="v-obj">100</b></label>
+      <input type="range" min="0" max="150" value="100" oninput="setObjVol(this.value)">
+    </div>
+    <div class="ctl plr">
+      <label>Игрок <b id="v-plr">100</b></label>
+      <input type="range" min="0" max="150" value="100" oninput="setPlrVol(this.value)">
+    </div>
+    <div class="ctl part">
+      <label>Частицы <b id="v-part">70</b></label>
+      <input type="range" min="0" max="100" value="70" oninput="setParticles(this.value)">
+    </div>
+  </div>
+</div>
 
 <div id="intro" class="overlay">
   <h1>ПРО<span class="red">УН</span></h1>
@@ -251,56 +315,158 @@ function densityAt(y) {
 
 const RING_RATIO = [1, 1.5, 2, 3];          // часовые передачи: внешние медленнее
 
+// Общий ритмический «голос»: talea (необратимый ритм) + цвет (изоритмия) +
+// состояние планировщика. Основа и для колец «солнечной системы»,
+// и для плоскостей асимметричной композиции-ПРОУНа.
+function newVoice(rnd, o, pulseMul, octShift) {
+  const talea = makeNRR(rnd, 1 + ((rnd() * 3) | 0));     // длина 3, 5 или 7
+  const cum = []; let acc = 0;
+  for (const d of talea) { cum.push(acc); acc += d; }
+  const colorLen = talea.length + (rnd() < 0.5 ? 1 : 2); // изоритмия: взаимно прост
+  const colorSeq = []; let dg = (rnd() * 6) | 0;
+  for (let i = 0; i < colorLen; i++) { colorSeq.push(dg); dg += ((rnd() * 5) | 0) - 2; }
+  return {
+    talea, cum, total: acc,
+    colorSeq, colorPos: 0,
+    pulse: o.pulse * pulseMul,
+    tempoMul: 1,
+    persona: ((rnd() * 3) | 0) - 1,          // -1 сжимается, 0 стоит, +1 ширится
+    refT: rnd() * 200,
+    oct: OCT[o.energy] + (octShift | 0),
+    nextT: undefined, nextIdx: 0,
+    pending: [],
+    flash: new Float32Array(talea.length),
+    headPulse: 0
+  };
+}
+
 function makeMech(rnd, x, y) {
+  // широкий разброс масштаба + редкие гиганты — иерархия и разнообразие радиусов
+  let scale = 0.85 + Math.pow(rnd(), 1.8) * 1.6;     // ~0.85..2.45, смещён к малым
+  if (rnd() < 0.12) scale += 0.6 + rnd() * 1.4;      // ~12% гигантов до ~4.5
   const o = {
-    x, y,
+    x, y, scale,
     energy: (rnd() * 4) | 0,
     spin: rnd() < 0.5 ? -1 : 1,
-    coreSize: 26 + rnd() * 36,
+    coreSize: (26 + rnd() * 36) * (0.5 + scale * 0.5),  // ядро растёт мягче радиусов
     coreRot: (rnd() < 0.5 ? -1 : 1) * (Math.PI / 12 + rnd() * Math.PI / 4),
+    tilt: (rnd() - 0.5) * Math.PI,          // наклон всей системы (для эллипсов)
     pulse: 0.40 + rnd() * 0.42,             // секунд на единицу длительности
     rootDeg: (rnd() * 8) | 0,
     act: 0, corePulse: 0,
     _hear: 0, _w: 0, _wf: -1, _colCd: 0,
-    rings: [], parts: []
+    archetype: 'orbital', axis: 0,
+    rings: [], frames: [], parts: []
   };
-  let r = o.coreSize + 28 + rnd() * 18;
-  const nRings = 2 + ((rnd() * 3) | 0);
+  // ~45% — асимметричные супрематические композиции, остальное — радиальные
+  if (rnd() < 0.45) makeProun(o, rnd); else makeOrbital(o, rnd);
+  o.orbitR = o.outerR * 0.8;
+  o.R = o.outerR + 170 + rnd() * 70;
+  o.partN = Math.min(22, Math.round((6 + rnd() * 8) * (0.7 + scale * 0.32)));
+  for (let p = 0; p < o.partN; p++) o.parts.push(spawnPart(o));
+  return o;
+}
+
+// радиально-симметричный «часовой механизм» — солнечная система партитур.
+// орбиты бывают круговыми или эллиптическими с наклоном — нет двух одинаковых.
+function makeOrbital(o, rnd) {
+  const sc = o.scale;
+  const elliptic = rnd() < 0.55;
+  let r = (o.coreSize + 24 + rnd() * 22) * (0.6 + sc * 0.4);
+  const nRings = 2 + ((rnd() * 4) | 0);     // 2..5 колец
   for (let k = 0; k < nRings; k++) {
-    const talea = makeNRR(rnd, 1 + ((rnd() * 3) | 0));   // длина 3, 5 или 7
-    const cum = []; let acc = 0;
-    for (const d of talea) { cum.push(acc); acc += d; }
-    const colorLen = talea.length + (rnd() < 0.5 ? 1 : 2); // изоритмия
-    const colorSeq = []; let dg = (rnd() * 6) | 0;
-    for (let i = 0; i < colorLen; i++) {
-      colorSeq.push(dg);
-      dg += ((rnd() * 5) | 0) - 2;
-    }
-    o.rings.push({
-      r,
-      dir: (k % 2 === 0 ? 1 : -1) * o.spin,
-      phase0: rnd() * TAU,
-      talea, cum, total: acc,
-      colorSeq, colorPos: 0,
-      pulse: o.pulse * RING_RATIO[Math.min(k, 3)],
-      tempoMul: 1,
-      persona: ((rnd() * 3) | 0) - 1,        // -1 сжимается, 0 стоит, +1 ширится
-      refT: rnd() * 200,
-      oct: OCT[o.energy] + (k === 0 ? 1 : 0) - (k >= 2 ? 1 : 0),
-      nextT: undefined, nextIdx: 0,
-      pending: [],
-      flash: new Float32Array(talea.length),
-      headPulse: 0,
-      wavy: talea.indexOf(1.5) >= 0          // добавленная длительность искривляет орбиту
-    });
-    r += 30 + rnd() * 36;
+    const v = newVoice(rnd, o, RING_RATIO[Math.min(k, 3)], (k === 0 ? 1 : 0) - (k >= 2 ? 1 : 0));
+    v.kind = 'ring'; v.instr = 'creature';
+    v.r = r;
+    v.ecc = elliptic ? 0.52 + rnd() * 0.4 : 1;        // сплюснутость орбиты
+    v.tilt = o.tilt + (rnd() - 0.5) * 0.5;            // наклон кольца
+    v.dir = (k % 2 === 0 ? 1 : -1) * o.spin;
+    v.phase0 = rnd() * TAU;
+    v.wavy = v.talea.indexOf(1.5) >= 0;     // добавленная длительность искривляет орбиту
+    o.rings.push(v);
+    r += (26 + rnd() * 42) * sc;
   }
   o.outerR = r;
-  o.orbitR = r * 0.8;
-  o.R = r + 170 + rnd() * 70;
-  const nP = 8 + ((rnd() * 6) | 0);
-  for (let p = 0; p < nP; p++) o.parts.push(spawnPart(o));
-  return o;
+}
+
+// асимметричная композиция в духе ПРОУНов Лисицкого: доминирующая диагональ,
+// пересекающиеся плоскости, парящие тела, баланс через асимметрию, осмысленная
+// пустота, иерархия форм. Каждый элемент — свой тембр, тайминг, характер движения.
+function makeProun(o, rnd) {
+  o.archetype = 'proun';
+  const axis = (rnd() < 0.5 ? -1 : 1) * (Math.PI * 0.16 + rnd() * Math.PI * 0.17);
+  o.axis = axis;
+  const ux = Math.cos(axis), uy = Math.sin(axis);   // вдоль оси
+  const nx = -uy, ny = ux;                          // поперёк оси
+  const U = (24 + rnd() * 16) * o.scale;
+  const side = rnd() < 0.5 ? 1 : -1;                // куда смещена масса
+  const massDisc = rnd() < 0.32;                    // доминанта — диск вместо плоскости
+  let reach = o.coreSize;
+
+  function el(cfg) {
+    const v = newVoice(rnd, o, cfg.pulseMul, cfg.octShift);
+    const u = cfg.u * U, w = cfg.v * U;
+    v.bx = u * ux + w * nx;
+    v.by = u * uy + w * ny;
+    v.kind = cfg.kind; v.instr = cfg.instr;
+    v.len = cfg.len * U; v.wid = (cfg.wid || 0.14) * U;
+    v.rot = cfg.rot != null ? cfg.rot : axis;
+    v.motion = cfg.motion; v.amp = (cfg.amp || 0) * U;
+    v.mfreq = cfg.mfreq; v.mphase = rnd() * TAU;
+    v.depth = cfg.depth; v.col = cfg.col;
+    v.dir = (rnd() < 0.5 ? -1 : 1) * o.spin;
+    v.r = Math.hypot(v.bx, v.by) + v.len * 0.35;
+    reach = Math.max(reach, v.r);
+    o.rings.push(v);
+  }
+
+  // 1. доминирующая масса — плоскость или крупный диск; низкий регистр, медленно
+  if (massDisc)
+    el({ kind: 'disc', instr: 'plane', u: -1.6 * side, v: 0.4 * side, len: 2.3, wid: 2.3,
+         motion: 'bob', amp: 0.34, mfreq: 0.14 + rnd() * 0.05, depth: 0.85,
+         col: 0, pulseMul: 3, octShift: -1 });
+  else
+    el({ kind: 'plane', instr: 'plane', u: -1.8 * side, v: 0.5 * side, len: 2.6, wid: 1.05,
+         rot: axis, motion: 'slide', amp: 0.5, mfreq: 0.16 + rnd() * 0.06, depth: 0.85,
+         col: 0, pulseMul: 3, octShift: -1 });
+  // 2. контр-балка — резкая диагональ поперёк оси: ритмический хребет (пиццикато)
+  el({ kind: 'bar', instr: 'bar', u: 0.1, v: -0.3 * side, len: 3.6, wid: 0.16,
+       rot: axis + (rnd() < 0.5 ? 1 : -1) * Math.PI * 0.42, motion: 'seesaw', amp: 0.11,
+       mfreq: 0.42 + rnd() * 0.12, depth: 0.4, col: 1, pulseMul: 1, octShift: 0 });
+  // 2b. вторая пересекающая балка (иногда) — пересекающиеся плоскости, напряжение
+  if (rnd() < 0.38)
+    el({ kind: 'bar', instr: 'bar', u: -0.5, v: 0.7 * side, len: 2.7, wid: 0.13,
+         rot: axis + (rnd() < 0.5 ? 1 : -1) * Math.PI * 0.64, motion: 'seesaw', amp: 0.08,
+         mfreq: 0.5 + rnd() * 0.2, depth: 0.55, col: 0, pulseMul: 1.5, octShift: 1 });
+  // 3. парящий диск — баланс на противоположном плече (колокол)
+  el({ kind: 'disc', instr: 'disc', u: 1.7 * side, v: -1.1 * side, len: 1.0, wid: 1.0,
+       motion: 'bob', amp: 0.42, mfreq: 0.30 + rnd() * 0.1, depth: 0.6,
+       col: 0, pulseMul: 2, octShift: 1 });
+  // 4. клин-акцент — лёгкое яркое тело на дальнем плече (рычаг баланса; стаб)
+  el({ kind: 'wedge', instr: 'wedge', u: 2.6 * side, v: 0.5 * side, len: 0.95, wid: 0.95,
+       rot: axis + Math.PI * 0.5, motion: 'drift', amp: 0.2, mfreq: 0.5 + rnd() * 0.2,
+       depth: 0.95, col: 0, pulseMul: 1.5, octShift: 1 });
+  // 5. малый диск-спутник (иногда)
+  if (rnd() < 0.6)
+    el({ kind: 'disc', instr: 'disc', u: 0.4 * side, v: 1.5 * side, len: 0.55, wid: 0.55,
+         motion: 'bob', amp: 0.5, mfreq: 0.55 + rnd() * 0.2, depth: 0.5,
+         col: 1, pulseMul: 2, octShift: 2 });
+  // 6. игла — тонкая линия, высокий тик (иногда)
+  if (rnd() < 0.5)
+    el({ kind: 'needle', instr: 'needle', u: -0.4, v: -0.9 * side, len: 1.3, wid: 0.05,
+         rot: axis + Math.PI * 0.5 * (rnd() < 0.5 ? 1 : -1), motion: 'spin', amp: 0,
+         mfreq: 0.2 + rnd() * 0.2, depth: 0.3, col: 1, pulseMul: 1, octShift: 2 });
+
+  // осмысленная пустота: тихая рамка-контур в пустующем квадранте (без звука)
+  if (rnd() < 0.75) {
+    const fu = -0.6 * side * U, fv = -1.9 * side * U;
+    const fw = (1.4 + rnd() * 0.7) * U, fh = (1.0 + rnd() * 0.5) * U;
+    o.frames.push({ bx: fu * ux + fv * nx, by: fu * uy + fv * ny, w: fw, h: fh,
+                    rot: axis + (rnd() - 0.5) * 0.5 });
+    reach = Math.max(reach, Math.hypot(fu, fv) + Math.max(fw, fh) * 0.6);
+  }
+
+  o.outerR = reach + 24;
 }
 
 function spawnPart(o) {
@@ -410,6 +576,18 @@ const player = {
 const ACCEL = 1600, MAX_SPEED = 720;
 const FUEL_COST = 2.1;                       // ед./с при полной тяге
 
+// ── гравитация нескольких тел (tunable; финальные значения подобраны симуляцией) ──
+let G_GRAV     = 78000;   // сила притяжения (инверсная к расстоянию², с softening)
+let GRAV_CAP   = 1150;    // потолок ускорения — численная стабильность
+let GRAV_SWIRL = 0.42;    // доля тангенциальной закрутки (орбитальный характер)
+let CENTER_K   = 1.15;    // мягкое центрирование к кольцу доминирующего колодца
+let RADIAL_DAMP= 1.35;    // гашение радиальной скорости → круговизна, читаемость
+let DRAG_COAST = 0.42;    // трение в свободном полёте (орбиты живут, праща летит)
+let DRAG_THRUST= 1.7;     // трение под тягой — управляемость
+let CAP_THRESH = 150;     // порог захвата на орбиту (ускорение, px/s²)
+let REL_THRESH = 62;      // порог отпускания
+let SWITCH_FAC = 1.4;     // во сколько раз новый колодец должен пересилить
+
 let dominant = null;                          // механизм, чьим спутником мы являемся
 let evCd = 0;                                 // защита от дребезга событий
 let frameId = 0;
@@ -467,10 +645,14 @@ function readInput() {
    bus(дакинг) → masterMute → компрессор → выход
    ════════════════════════════════════════════════════════════════ */
 let ac = null, bus = null, masterMute = null, muted = false;
+let objGain = null, plrGain = null, masterVol = null, sfxOut = null;  // подмиксы громкости
 let delayIn = null, reverbIn = null;
 let windGain = null, thrust = null;
 let sus = [];
 let notesBudget = 14;
+
+// независимые регуляторы (панель управления, реальное время)
+let uiObjVol = 1.0, uiPlrVol = 1.0, uiMaster = 0.85, particleFrac = 0.7;
 
 const audioOn = () => !!ac && ac.state === 'running' && !muted;
 function clockNow() { return ac ? ac.currentTime : performance.now() / 1000; }
@@ -514,8 +696,16 @@ function initAudio() {
   masterMute = ac.createGain(); masterMute.gain.value = muted ? 0 : 1;
   masterMute.connect(comp);
 
+  masterVol = ac.createGain(); masterVol.gain.value = uiMaster;   // общая громкость
+  masterVol.connect(masterMute);
+
   bus = ac.createGain(); bus.gain.value = 1;     // сюда бьёт дакинг-перебивка
-  bus.connect(masterMute);
+  bus.connect(masterVol);
+
+  // подмиксы: объекты vs игрок — независимая громкость в реальном времени
+  objGain = ac.createGain(); objGain.gain.value = uiObjVol; objGain.connect(bus);
+  plrGain = ac.createGain(); plrGain.gain.value = uiPlrVol; plrGain.connect(bus);
+  sfxOut = objGain;                              // цель по умолчанию для инструментов объектов
 
   // сухая тёмная камера
   reverbIn = makeReverb(1.35);
@@ -544,30 +734,39 @@ function initAudio() {
   const b1 = ac.createOscillator(); b1.type = 'sine'; b1.frequency.value = ROOT * 2;
   const b1g = ac.createGain(); b1g.gain.value = 0;
   b1g.gain.setTargetAtTime(0.016, ac.currentTime, 4);
-  b1.connect(b1g); b1g.connect(bus); b1.start();
+  b1.connect(b1g); b1g.connect(objGain); b1.start();
   const bn = ac.createBufferSource(); bn.buffer = noiseBuf; bn.loop = true;
   const bnf = ac.createBiquadFilter(); bnf.type = 'bandpass'; bnf.frequency.value = 110; bnf.Q.value = 1.8;
   const bng = ac.createGain(); bng.gain.value = 0.011;
-  bn.connect(bnf); bnf.connect(bng); bng.connect(bus); bn.start();
+  bn.connect(bnf); bnf.connect(bng); bng.connect(objGain); bn.start();
 
-  // ветер высоты
+  // ветер высоты (звук игрока — движение)
   const wn = ac.createBufferSource(); wn.buffer = noiseBuf; wn.loop = true;
   const wlp = ac.createBiquadFilter(); wlp.type = 'lowpass'; wlp.frequency.value = 420;
   windGain = ac.createGain(); windGain.gain.value = 0;
-  wn.connect(wlp); wlp.connect(windGain); windGain.connect(bus); wn.start();
+  wn.connect(wlp); wlp.connect(windGain); windGain.connect(plrGain); wn.start();
 
-  // тяга: дыхание турбины — шум через полосовой + суб-синус; на пустых баках дрожит
-  const tn = ac.createBufferSource(); tn.buffer = noiseBuf; tn.loop = true;
-  const tbp = ac.createBiquadFilter(); tbp.type = 'bandpass'; tbp.frequency.value = 300; tbp.Q.value = 1.2;
-  const tg = ac.createGain(); tg.gain.value = 0;
-  tn.connect(tbp); tbp.connect(tg); tg.connect(bus); tn.start();
-  const tsub = ac.createOscillator(); tsub.type = 'sine'; tsub.frequency.value = ROOT;
-  const tsg = ac.createGain(); tsg.gain.value = 0;
-  tsub.connect(tsg); tsg.connect(bus); tsub.start();
-  const fl = ac.createOscillator(); fl.type = 'sine'; fl.frequency.value = 11;
-  const flg = ac.createGain(); flg.gain.value = 0;
-  fl.connect(flg); flg.connect(tg.gain); fl.start();
-  thrust = { g: tg, bp: tbp, sub: tsg, flutter: flg };
+  // движение игрока — тональный слой: педаль-тоника + восходящий голос скорости.
+  // фильтр раскрывается со скоростью, тремоло ускоряется — ощущение движения.
+  const mvLp = ac.createBiquadFilter(); mvLp.type = 'lowpass'; mvLp.frequency.value = 320; mvLp.Q.value = 0.8;
+  const mvAmp = ac.createGain(); mvAmp.gain.value = 0;
+  mvLp.connect(mvAmp); mvAmp.connect(plrGain);
+  const mvSend = ac.createGain(); mvSend.gain.value = 0.12; mvAmp.connect(mvSend); mvSend.connect(reverbIn);
+  // педаль-тоника (две расстроенные пилы на D) — тональное заземление
+  const ped1 = ac.createOscillator(); ped1.type = 'sawtooth'; ped1.frequency.value = ROOT * 2;
+  const ped2 = ac.createOscillator(); ped2.type = 'sawtooth'; ped2.frequency.value = ROOT * 2; ped2.detune.value = -8;
+  const pedG = ac.createGain(); pedG.gain.value = 0.55;
+  ped1.connect(pedG); ped2.connect(pedG); pedG.connect(mvLp);
+  ped1.start(); ped2.start();
+  // восходящий голос движения: скользит вверх (квинта → октава+квинта) со скоростью
+  const glide = ac.createOscillator(); glide.type = 'triangle'; glide.frequency.value = ROOT * 3;
+  const glideG = ac.createGain(); glideG.gain.value = 0;
+  glide.connect(glideG); glideG.connect(mvLp); glide.start();
+  // тремоло движения — его частота растёт со скоростью (ритм скорости)
+  const trem = ac.createOscillator(); trem.type = 'sine'; trem.frequency.value = 4;
+  const tremD = ac.createGain(); tremD.gain.value = 0;
+  trem.connect(tremD); tremD.connect(mvAmp.gain); trem.start();
+  thrust = { lp: mvLp, amp: mvAmp, glide, glideG, trem, tremD };
 
   // четыре длящихся голоса родства — приглушённый резонансный слой
   const susDef = [
@@ -584,7 +783,7 @@ function initAudio() {
     bp.frequency.value = VOWELS[i][0]; bp.Q.value = 2.6;
     const direct = ac.createGain(); direct.gain.value = 0.5;
     o1.connect(bp); bp.connect(vg); o1.connect(direct); direct.connect(vg);
-    vg.connect(bus);
+    vg.connect(plrGain);
     const rs = ac.createGain(); rs.gain.value = 0.2; vg.connect(rs); rs.connect(reverbIn);
     o1.start();
     return { g: vg, o1, def };
@@ -639,7 +838,7 @@ function voice(opt) {
   o1.connect(sh);
   sh.connect(f1); f1.connect(amp);
   sh.connect(g2); g2.connect(f2); f2.connect(amp);
-  amp.connect(bus);
+  amp.connect(opt.out || sfxOut);
   if (send > 0.01) { const s = ac.createGain(); s.gain.value = send; amp.connect(s); s.connect(delayIn); }
   const rs = ac.createGain(); rs.gain.value = 0.16; amp.connect(rs); rs.connect(reverbIn);
   o1.start(t0); o1.stop(t1 + 0.12);
@@ -656,7 +855,7 @@ function click(f, when, g) {
   amp.gain.setValueAtTime(0, t0);
   amp.gain.linearRampToValueAtTime(g, t0 + 0.003);
   amp.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.06);
-  src.connect(bp); bp.connect(amp); amp.connect(bus);
+  src.connect(bp); bp.connect(amp); amp.connect(sfxOut);
   src.start(t0, Math.random() * 1.5); src.stop(t0 + 0.08);
   const th = ac.createOscillator(); th.type = 'sine';
   th.frequency.setValueAtTime(Math.max(f * 0.5, 28), t0);
@@ -665,7 +864,7 @@ function click(f, when, g) {
   tg2.gain.setValueAtTime(0, t0);
   tg2.gain.linearRampToValueAtTime(g * 0.8, t0 + 0.004);
   tg2.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.09);
-  th.connect(tg2); tg2.connect(bus);
+  th.connect(tg2); tg2.connect(sfxOut);
   th.start(t0); th.stop(t0 + 0.1);
 }
 
@@ -691,7 +890,7 @@ function birdBurst(fBase, when, g) {
     amp.gain.setValueAtTime(0, t);
     amp.gain.linearRampToValueAtTime(g, t + 0.005);
     amp.gain.exponentialRampToValueAtTime(0.0005, t + dur + 0.02);
-    o.connect(bp); bp.connect(amp); amp.connect(bus);
+    o.connect(bp); bp.connect(amp); amp.connect(sfxOut);
     const s = ac.createGain(); s.gain.value = 0.25; amp.connect(s); s.connect(delayIn);
     o.start(t); o.stop(t + dur + 0.05);
     t += dur + 0.02 + Math.random() * 0.05;
@@ -707,7 +906,7 @@ function noiseBurst(when, g) {
   amp.gain.setValueAtTime(0, t0);
   amp.gain.linearRampToValueAtTime(g, t0 + 0.004);
   amp.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.13);
-  src.connect(hp); hp.connect(amp); amp.connect(bus);
+  src.connect(hp); hp.connect(amp); amp.connect(sfxOut);
   src.start(t0, Math.random()); src.stop(t0 + 0.16);
 }
 
@@ -722,8 +921,44 @@ function chirp(e, fill) {
   amp.gain.setValueAtTime(0, t0);
   amp.gain.linearRampToValueAtTime(0.06, t0 + 0.006);
   amp.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.11);
-  o.connect(amp); amp.connect(bus);
+  o.connect(amp); amp.connect(plrGain);
   o.start(t0); o.stop(t0 + 0.15);
+}
+
+// колокол с инхармонической частицей — парящие диски
+function bell(f, when, g, decay) {
+  if (!audioOn()) return;
+  const t0 = Math.max(when, ac.currentTime + 0.003);
+  const dur = decay || 1.0;
+  const o1 = ac.createOscillator(); o1.type = 'sine'; o1.frequency.value = f;
+  const o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 2.76; // инхармоника
+  const g2 = ac.createGain(); g2.gain.value = 0.2;
+  const amp = ac.createGain();
+  amp.gain.setValueAtTime(0, t0);
+  amp.gain.linearRampToValueAtTime(g, t0 + 0.004);
+  amp.gain.exponentialRampToValueAtTime(0.0004, t0 + dur);
+  o1.connect(amp); o2.connect(g2); g2.connect(amp); amp.connect(sfxOut);
+  const rs = ac.createGain(); rs.gain.value = 0.22; amp.connect(rs); rs.connect(reverbIn);
+  const sd = ac.createGain(); sd.gain.value = 0.14; amp.connect(sd); sd.connect(delayIn);
+  o1.start(t0); o2.start(t0); o1.stop(t0 + dur + 0.1); o2.stop(t0 + dur + 0.1);
+}
+
+// деревянное пиццикато — ритмический хребет диагональных балок
+function pluck(f, when, g) {
+  if (!audioOn()) return;
+  const t0 = Math.max(when, ac.currentTime + 0.003);
+  const o1 = ac.createOscillator(); o1.type = 'triangle';
+  o1.frequency.setValueAtTime(f * 1.012, t0);
+  o1.frequency.exponentialRampToValueAtTime(f, t0 + 0.03);
+  const o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 3.01;
+  const g2 = ac.createGain(); g2.gain.value = 0.28;
+  const amp = ac.createGain();
+  amp.gain.setValueAtTime(0, t0);
+  amp.gain.linearRampToValueAtTime(g, t0 + 0.002);
+  amp.gain.exponentialRampToValueAtTime(0.0004, t0 + 0.26);
+  o1.connect(amp); o2.connect(g2); g2.connect(amp); amp.connect(sfxOut);
+  const rs = ac.createGain(); rs.gain.value = 0.12; amp.connect(rs); rs.connect(reverbIn);
+  o1.start(t0); o2.start(t0); o1.stop(t0 + 0.32); o2.stop(t0 + 0.32);
 }
 
 // перебивка: вся шина приседает, как вдох перед криком
@@ -739,6 +974,24 @@ function duck(depth, hold) {
 function toggleMute() {
   muted = !muted;
   if (masterMute) masterMute.gain.setTargetAtTime(muted ? 0 : 1, ac.currentTime, 0.05);
+}
+
+// ── панель регулировок: всё в реальном времени, без перезапуска ──
+function togglePanel() { document.getElementById('panel').classList.toggle('collapsed'); }
+function setMasterVol(v) {
+  uiMaster = v / 100; document.getElementById('v-master').textContent = v;
+  if (masterVol) masterVol.gain.setTargetAtTime(uiMaster, ac.currentTime, 0.03);
+}
+function setObjVol(v) {
+  uiObjVol = v / 100; document.getElementById('v-obj').textContent = v;
+  if (objGain) objGain.gain.setTargetAtTime(uiObjVol, ac.currentTime, 0.03);
+}
+function setPlrVol(v) {
+  uiPlrVol = v / 100; document.getElementById('v-plr').textContent = v;
+  if (plrGain) plrGain.gain.setTargetAtTime(uiPlrVol, ac.currentTime, 0.03);
+}
+function setParticles(v) {
+  particleFrac = v / 100; document.getElementById('v-part').textContent = v;
 }
 
 /* ════════════════════════════════════════════════════════════════
@@ -800,6 +1053,29 @@ function playWheelNote(o, ring, accent, deg, dur, when) {
   const spp = ring.pulse / ring.tempoMul;
   const secs = Math.min(dur * spp * 0.92, 1.5);
   const amp = (accent ? 1.3 : 1) * hear * hear;
+
+  // тембр по роли элемента в композиции (плоскость/балка/диск/клин/игла)
+  switch (ring.instr) {
+    case 'plane':   // масса — длинный формантный пад с падающим глиссандо
+      voice({ f, when, dur: Math.min(secs, 1.4), e, g: 0.12 * amp,
+              gliss: dur >= 3 ? -5 : -2, vib: 0.9, send: 0.2 });
+      return;
+    case 'bar':     // ритмический хребет — деревянное пиццикато
+      pluck(f, when, 0.16 * amp);
+      return;
+    case 'disc':    // парящий диск — колокол
+      bell(f, when, 0.12 * amp, 0.7 + dur * 0.28);
+      return;
+    case 'wedge':   // яркий акцент — короткий стаб
+      voice({ f, when, dur: Math.min(secs, 0.42), e, g: 0.12 * amp,
+              gliss: 3, vib: 0, send: 0.3 });
+      return;
+    case 'needle':  // тонкая игла — высокий тик
+      click(Math.min(f * 2, 6000), when, 0.07 * amp);
+      return;
+  }
+
+  // 'creature' — радиальные кольца: тембр по длительности (как прежде)
   if (e === 3 && dur >= 2) { birdBurst(f, when, 0.10 * amp); return; }
   if (dur >= 3) {
     voice({ f, when, dur: secs, e, g: 0.15 * amp, gliss: -4, vib: 1, send: accent ? 0.35 : 0.1 });
@@ -874,7 +1150,7 @@ function playRev(i, orb) {
   if (!audioOn()) return;
   const deg = orb.target ? orb.target.rootDeg : 0;
   voice({ f: modeFreq(i, deg, OCT[i] + 1), when: ac.currentTime,
-          dur: 0.16 + fill * 0.3, e: i, g: 0.045 + fill * 0.04, vib: 0.4, send: 0.05 });
+          dur: 0.16 + fill * 0.3, e: i, g: 0.045 + fill * 0.04, vib: 0.4, send: 0.05, out: plrGain });
 }
 
 function finale() {
@@ -963,60 +1239,86 @@ function update(dt) {
   const [afx, afy] = fieldAt(player.x, player.y);
   ax += afx * 0.5; ay += afy * 0.5;
 
-  // ── гравитация механизмов: пружина к кольцу + тангенциальная праща ──
-  let domBest = null, domW = 0;
+  // ── гравитация нескольких тел: каждый колодец тянет одновременно ──
+  // (мульти-тело → перехват и гравитационные пращи возникают сами собой)
+  let domBest = null, domW = 0, domUx = 0, domUy = 0, domD = 1;
   for (const o of nearbyCache) {
     const dx = o.x - player.x, dy = o.y - player.y;
     const d = Math.hypot(dx, dy) || 1;
     o._hear = Math.max(0, 1 - d / (o.R * 1.5));
     o._w = 0; o._wf = frameId;
     if (o._colCd > 0) o._colCd -= dt;
-    if (d < o.R) {
-      const w = 1 - d / o.R;
-      const ws = w * w * (3 - 2 * w);
-      const pull = 0.3 + 0.8 * (tanks[o.energy] / MAXTANK);
+
+    const reach = o.R * 1.45;
+    if (d < reach) {
+      const mass = o.outerR;
+      const soft = o.coreSize * 1.1 + 46;
+      const fill = tanks[o.energy] / MAXTANK;
+      let a = G_GRAV * mass / (d * d + soft * soft);
+      a *= 0.55 + 0.7 * fill;                     // накопленная энергия усиливает захват
+      if (a > GRAV_CAP) a = GRAV_CAP;
+      a *= smoothstep(reach, reach * 0.66, d);    // мягкая внешняя граница, без обрыва
       const ux = dx / d, uy = dy / d;
-      const ringDelta = Math.max(-300, Math.min(300, d - o.orbitR));
-      ax += ux * ringDelta * 2.0 * pull * ws;
-      ay += uy * ringDelta * 2.0 * pull * ws;
-      ax += -uy * o.spin * 420 * pull * ws;
-      ay +=  ux * o.spin * 420 * pull * ws;
-      o._w = pull * ws;
-      if (o._w > domW) { domW = o._w; domBest = o; }
+      ax += ux * a; ay += uy * a;                 // притяжение к центру
+      const sw = a * GRAV_SWIRL;                  // тангенциальная закрутка по спину
+      ax += -uy * o.spin * sw; ay += ux * o.spin * sw;
+      o._w = a;
+      if (a > domW) { domW = a; domBest = o; domUx = ux; domUy = uy; domD = d; }
     }
-    // столкновение с ядром
+
+    // мягкое отталкивание у ядра — не даёт упасть в центр (колодец без дна)
     const collR = o.coreSize * 0.85 + 12;
+    const safe = collR * 2.3;
+    if (d < safe) {
+      const push = 1 - d / safe;
+      ax -= dx / d * push * push * 3000;
+      ay -= dy / d * push * push * 3000;
+    }
     if (d < collR && o._colCd <= 0) {
       const nx = -dx / d, ny = -dy / d;
-      player.x = o.x + nx * collR;          // вытолкнуть на границу ядра
+      player.x = o.x + nx * collR;
       player.y = o.y + ny * collR;
       const dot = player.vx * nx + player.vy * ny;
       if (dot < 0) {
-        player.vx = (player.vx - 2 * dot * nx) * 0.55;
-        player.vy = (player.vy - 2 * dot * ny) * 0.55;
+        player.vx = (player.vx - 2 * dot * nx) * 0.6;
+        player.vy = (player.vy - 2 * dot * ny) * 0.6;
       }
       o._colCd = 0.5;
       gestureCollision(o);
     }
   }
 
+  // доминирующий колодец: мягкое центрирование к кольцу (читаемая орбита,
+  // но не жёсткая — соседний колодец может перехватить во время вращения)
+  if (domBest) {
+    const ringErr = domD - domBest.orbitR;
+    ax += domUx * ringErr * CENTER_K;
+    ay += domUy * ringErr * CENTER_K;
+  }
+
   // ── спутниковые переходы: захват / перехват / отпускание ──
   evCd -= dt;
   const wOf = m => (m && m._wf === frameId) ? m._w : 0;
   if (evCd <= 0) {
-    if (!dominant && domW > 0.22) {
+    if (!dominant && domW > CAP_THRESH) {
       dominant = domBest; gestureCapture(domBest); evCd = 0.3;
     } else if (dominant) {
       const wd = wOf(dominant);
-      if (wd < 0.10) { dominant = null; gestureRelease(); evCd = 0.25; }
-      else if (domBest && domBest !== dominant && domW > wd * 1.35 && domW > 0.25) {
-        dominant = domBest; gestureSwitch(domBest); evCd = 0.3;
+      if (wd < REL_THRESH) { dominant = null; gestureRelease(); evCd = 0.22; }
+      else if (domBest && domBest !== dominant && domW > wd * SWITCH_FAC && domW > CAP_THRESH) {
+        dominant = domBest; gestureSwitch(domBest); evCd = 0.3;   // перехват (gravity assist)
       }
     }
   }
 
   player.vx += ax * dt; player.vy += ay * dt;
-  const drag = Math.exp(-1.6 * dt);
+  // гашение радиальной скорости у доминирующего колодца → круговизна орбиты
+  if (domBest) {
+    const vr = player.vx * domUx + player.vy * domUy;
+    const f = RADIAL_DAMP * dt;
+    player.vx -= domUx * vr * f; player.vy -= domUy * vr * f;
+  }
+  const drag = Math.exp(-(inputMag > 0 ? DRAG_THRUST : DRAG_COAST) * dt);
   player.vx *= drag; player.vy *= drag;
   let speed = Math.hypot(player.vx, player.vy);
   if (speed > MAX_SPEED) {
@@ -1106,9 +1408,11 @@ function update(dt) {
       for (let i = 0; i < ring.flash.length; i++) ring.flash[i] *= Math.exp(-5 * dt);
       ring.headPulse *= Math.exp(-5 * dt);
     }
-    // частицы на полях
+    // частицы на полях — активна доля от пула (регулятор количества)
     const kf = 1 - Math.exp(-2.2 * dt);
-    for (const p of o.parts) {
+    const activeN = Math.round(o.parts.length * particleFrac);
+    for (let pi = 0; pi < activeN; pi++) {
+      const p = o.parts[pi];
       const [fx2, fy2] = fieldAt(p.x, p.y);
       p.vx += (fx2 - p.vx) * kf;
       p.vy += (fy2 - p.vy) * kf;
@@ -1134,13 +1438,16 @@ function update(dt) {
       windGain.gain.setTargetAtTime(sp * 0.03 + prog * 0.022, ac.currentTime, 0.25);
     if (thrust) {
       const on = inputMag > 0;
-      thrust.g.gain.setTargetAtTime(
-        on ? (starving ? 0.03 : 0.05 + sp * 0.05) : sp * 0.012,
-        ac.currentTime, on ? 0.06 : 0.35);
-      thrust.bp.frequency.setTargetAtTime(260 + sp * 2100 + (starving ? 700 : 0), ac.currentTime, 0.12);
-      thrust.bp.Q.setTargetAtTime(starving ? 6 : 1.2, ac.currentTime, 0.2);
-      thrust.flutter.gain.setTargetAtTime(starving && on ? 0.035 : 0, ac.currentTime, 0.15);
-      thrust.sub.gain.setTargetAtTime(on && !starving ? 0.05 * (0.4 + sp) : 0, ac.currentTime, 0.1);
+      const lvl = on ? (starving ? 0.05 : 0.07 + sp * 0.08) : sp * 0.02;
+      thrust.amp.gain.setTargetAtTime(lvl, ac.currentTime, on ? 0.05 : 0.3);
+      thrust.tremD.gain.setTargetAtTime(lvl * (0.22 + sp * 0.5), ac.currentTime, 0.1);
+      thrust.trem.frequency.setTargetAtTime((starving ? 8 : 3) + sp * 9, ac.currentTime, 0.15);
+      thrust.lp.frequency.setTargetAtTime(300 + sp * 3200, ac.currentTime, 0.1);
+      // восходящий голос: квинта (×3) на покое → октава+квинта (×6) на максимуме
+      thrust.glide.frequency.setTargetAtTime(ROOT * 2 * (1.5 + sp * 1.5) * (starving ? 0.5 : 1), ac.currentTime, 0.12);
+      thrust.glide.detune.setTargetAtTime(starving ? 30 : 0, ac.currentTime, 0.2);
+      thrust.glideG.gain.setTargetAtTime(
+        (on ? 0.35 + sp * 0.55 : sp * 0.3) * (starving ? 0.5 : 1), ac.currentTime, 0.15);
     }
   }
 }
@@ -1236,9 +1543,8 @@ function drawMech(o, T, t) {
   ctx.save();
   ctx.translate(o.x, o.y);
   const c = ENERGY_COLOR[o.energy];
-  const px = player.x - o.x, py = player.y - o.y;
 
-  // зона тяготения и спутниковое кольцо
+  // зона тяготения и спутниковое кольцо (общие для обоих архетипов)
   ctx.strokeStyle = INK; ctx.lineWidth = 1;
   ctx.globalAlpha = 0.05;
   ctx.setLineDash([2, 7]);
@@ -1249,43 +1555,58 @@ function drawMech(o, T, t) {
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
 
+  if (o.archetype === 'proun') drawProunBody(o, T, t);
+  else drawOrbitalBody(o, T, t);
+
+  if (o.act > 0.02) {
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = o.act * 0.5;
+    ctx.beginPath();
+    ctx.arc(0, 0, o.outerR * (1.04 + 0.05 * Math.sin(t * 6)), 0, TAU);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+// радиальный механизм: кольца-партитуры (круг/эллипс с наклоном) с бусинами и иглой
+function drawOrbitalBody(o, T, t) {
+  const c = ENERGY_COLOR[o.energy];
+  const px = player.x - o.x, py = player.y - o.y;
   for (const ring of o.rings) {
-    // дыхание ритмического персонажа: медленный цикл шире
     const breath = ring.persona === 0 ? 1 : 1 + (1 - ring.tempoMul) * 0.10;
     const rr = ring.r * breath;
+    const ecc = ring.ecc || 1, ct = Math.cos(ring.tilt || 0), st = Math.sin(ring.tilt || 0);
+    // точка на наклонённом эллипсе по угловой фазе и радиусу
+    const pt = (ang, rad) => {
+      const ex = Math.cos(ang) * rad, ey = Math.sin(ang) * rad * ecc;
+      return [ex * ct - ey * st, ex * st + ey * ct];
+    };
 
     ctx.strokeStyle = INK;
     ctx.globalAlpha = 0.15;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
-    if (ring.wavy) {
-      for (let a = 0; a <= 64; a++) {
-        const ang = a / 64 * TAU;
-        const r2 = rr + Math.sin(ang * 7 + t * 1.5 * ring.dir) * 5;
-        const wx = Math.cos(ang) * r2, wy = Math.sin(ang) * r2;
-        if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
-      }
-      ctx.closePath();
-    } else {
-      ctx.arc(0, 0, rr, 0, TAU);
+    for (let a = 0; a <= 72; a++) {
+      const ang = a / 72 * TAU;
+      const rad = ring.wavy ? rr + Math.sin(ang * 7 + t * 1.5 * ring.dir) * 5 : rr;
+      const [wx, wy] = pt(ang, rad);
+      if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
     }
+    ctx.closePath();
     ctx.stroke();
     ctx.globalAlpha = 1;
 
     // бусины: партитура длительностей, видимая глазом
     for (let i = 0; i < ring.talea.length; i++) {
       const a = ring.phase0 + ring.dir * (ring.cum[i] / ring.total) * TAU;
-      let bx = Math.cos(a) * rr, by = Math.sin(a) * rr;
-      // игрок искривляет орбиты форм
-      const ddx = px - bx, ddy = py - by;
-      const dd = Math.hypot(ddx, ddy);
-      if (dd < 240 && dd > 1) {
-        const m = (1 - dd / 240) * 12;
-        bx += ddx / dd * m; by += ddy / dd * m;
-      }
+      let [bx, by] = pt(a, rr);
+      const ddx = px - bx, ddy = py - by, dd = Math.hypot(ddx, ddy);
+      if (dd < 240 && dd > 1) { const m = (1 - dd / 240) * 12; bx += ddx / dd * m; by += ddy / dd * m; }
       ctx.save();
       ctx.translate(bx, by);
-      ctx.rotate(a + Math.PI / 2);
+      ctx.rotate(a + (ring.tilt || 0) + Math.PI / 2);
       ctx.globalAlpha = i === 0 ? 0.95 : 0.7;
       drawBead(ring.talea[i], i === 0 ? c : INK);
       if (ring.flash[i] > 0.03) {
@@ -1303,42 +1624,139 @@ function drawMech(o, T, t) {
     // играющая головка — игла партитуры
     const p = ringPos(ring, T);
     const ha = ring.phase0 + ring.dir * (p / ring.total) * TAU;
-    let hx = Math.cos(ha) * rr, hy = Math.sin(ha) * rr;
-    const hdx = px - hx, hdy = py - hy;
-    const hd = Math.hypot(hdx, hdy);
-    if (hd < 240 && hd > 1) {
-      const m = (1 - hd / 240) * 12;
-      hx += hdx / hd * m; hy += hdy / hd * m;
-    }
-    // хвост иглы
-    ctx.strokeStyle = c;
-    ctx.globalAlpha = 0.3;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    if (ring.dir > 0) ctx.arc(0, 0, rr, ha - 0.5, ha);
-    else ctx.arc(0, 0, rr, ha, ha + 0.5);
-    ctx.stroke();
+    let [hx, hy] = pt(ha, rr);
+    const hdx = px - hx, hdy = py - hy, hd = Math.hypot(hdx, hdy);
+    if (hd < 240 && hd > 1) { const m = (1 - hd / 240) * 12; hx += hdx / hd * m; hy += hdy / hd * m; }
+    // короткий хвост вдоль орбиты
+    const [tx, ty] = pt(ha - ring.dir * 0.42, rr);
+    ctx.strokeStyle = c; ctx.globalAlpha = 0.3; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.save();
     ctx.translate(hx, hy);
-    ctx.rotate(ha);
+    ctx.rotate(ha + (ring.tilt || 0));
     ctx.fillStyle = c; ctx.strokeStyle = c;
     drawGlyph(o.energy, 6 + ring.headPulse * 3.5);
     ctx.restore();
   }
 
   drawMechCore(o);
+}
 
-  if (o.act > 0.02) {
-    ctx.strokeStyle = c;
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = o.act * 0.5;
-    ctx.beginPath();
-    ctx.arc(0, 0, o.outerR * (1.04 + 0.05 * Math.sin(t * 6)), 0, TAU);
-    ctx.stroke();
+// супрематическая композиция: ось, пустота-рамка, парящие тела от дальних к ближним
+function drawProunBody(o, T, t) {
+  const c = ENERGY_COLOR[o.energy];
+  const px = player.x - o.x, py = player.y - o.y;
+
+  // доминирующая диагональ — едва уловимая ось композиции
+  ctx.strokeStyle = INK; ctx.globalAlpha = 0.07; ctx.lineWidth = 1;
+  const ax = Math.cos(o.axis), ay = Math.sin(o.axis), L = o.outerR * 0.95;
+  ctx.beginPath(); ctx.moveTo(-ax * L, -ay * L); ctx.lineTo(ax * L, ay * L); ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // осмысленная пустота — тихие рамки-контуры
+  for (const fr of o.frames) {
+    ctx.save(); ctx.translate(fr.bx, fr.by); ctx.rotate(fr.rot);
+    ctx.strokeStyle = INK; ctx.globalAlpha = 0.13; ctx.lineWidth = 1.4;
+    ctx.strokeRect(-fr.w / 2, -fr.h / 2, fr.w, fr.h);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+
+  // элементы — от дальних (низкий depth) к ближним: ощущение глубины
+  const els = o.rings.slice().sort((a, b) => a.depth - b.depth);
+  for (const el of els) drawProunEl(o, el, t, px, py);
+
+  // центр спутниковой орбиты — пивот, пульсирует на сильную долю
+  const pv = 3.5 + o.corePulse * 3;
+  ctx.beginPath(); ctx.arc(0, 0, pv, 0, TAU);
+  ctx.fillStyle = CREAM; ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke();
+}
+
+function drawProunEl(o, el, t, px, py) {
+  const c = ENERGY_COLOR[o.energy];
+  const col = el.col === 0 ? c : INK;
+  const ax = Math.cos(o.axis), ay = Math.sin(o.axis);
+  const nx = -ay, ny = ax;
+  // движение — непрерывное, сглаженное; удар (headPulse) — короткий overshoot
+  let ox = el.bx, oy = el.by, rot = el.rot, sc = 1;
+  const m = Math.sin(t * el.mfreq * TAU + el.mphase);
+  if (el.motion === 'slide') { ox += ax * m * el.amp; oy += ay * m * el.amp; rot += m * 0.03; }
+  else if (el.motion === 'bob') { ox += nx * m * el.amp; oy += ny * m * el.amp; sc = 1 + el.headPulse * 0.18; }
+  else if (el.motion === 'seesaw') { rot += m * el.amp; }
+  else if (el.motion === 'drift') {
+    const m2 = Math.sin(t * el.mfreq * 0.7 * TAU + el.mphase * 1.7);
+    ox += (ax * m + nx * m2 * 0.7) * el.amp;
+    oy += (ay * m + ny * m2 * 0.7) * el.amp;
+  } else if (el.motion === 'spin') { rot += t * el.mfreq * (el.dir || 1); }
+  sc *= 1 + el.headPulse * 0.12;
+
+  // игрок искривляет парящие тела
+  const ddx = px - ox, ddy = py - oy, dd = Math.hypot(ddx, ddy);
+  if (dd < 220 && dd > 1) { const k = (1 - dd / 220) * 10; ox += ddx / dd * k; oy += ddy / dd * k; }
+
+  ctx.save();
+  ctx.translate(ox, oy);
+  ctx.rotate(rot);
+  ctx.scale(sc, sc);
+
+  // парящая тень — глубина
+  ctx.save();
+  ctx.translate((5 + el.depth * 11) * 0.6, 5 + el.depth * 11);
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = INK; ctx.strokeStyle = INK;
+  prounShape(el, true);
+  ctx.restore();
+
+  // тело
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = col; ctx.strokeStyle = col;
+  prounShape(el, el.kind !== 'needle');
+
+  // приём Лисицкого: смещённый контур-призрак у доминирующей плоскости
+  if (el.kind === 'plane') {
+    ctx.globalAlpha = 0.5; ctx.strokeStyle = INK; ctx.lineWidth = 1.3;
+    ctx.strokeRect(-el.len / 2 - 6, -el.wid / 2 + 6, el.len, el.wid);
+    ctx.globalAlpha = 1;
+  }
+
+  // удар — вспышка-контур в цвете энергии (визуальный ритм = звуковому)
+  if (el.headPulse > 0.03) {
+    ctx.globalAlpha = el.headPulse * 0.7; ctx.strokeStyle = c; ctx.lineWidth = 2;
+    const rr = Math.max(el.len, el.wid) * 0.6 + (1 - el.headPulse) * 12;
+    ctx.beginPath(); ctx.arc(0, 0, rr, 0, TAU); ctx.stroke();
     ctx.globalAlpha = 1;
   }
   ctx.restore();
+}
+
+function prounShape(el, fill) {
+  switch (el.kind) {
+    case 'plane':
+    case 'bar':
+      if (fill) ctx.fillRect(-el.len / 2, -el.wid / 2, el.len, el.wid);
+      else ctx.strokeRect(-el.len / 2, -el.wid / 2, el.len, el.wid);
+      break;
+    case 'disc': {
+      const r = el.len / 2;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+      if (fill) ctx.fill(); else { ctx.lineWidth = Math.max(2, r * 0.3); ctx.stroke(); }
+      break;
+    }
+    case 'wedge': {
+      const s = el.len / 2;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 1.2); ctx.lineTo(s, s * 0.8); ctx.lineTo(-s, s * 0.8);
+      ctx.closePath(); ctx.fill();
+      break;
+    }
+    case 'needle':
+      ctx.lineWidth = Math.max(1.5, el.wid);
+      ctx.beginPath(); ctx.moveTo(-el.len / 2, 0); ctx.lineTo(el.len / 2, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(el.len / 2, 0, 2.4, 0, TAU); ctx.fill();
+      break;
+  }
 }
 
 function drawDecor(d) {
@@ -1443,7 +1861,9 @@ function draw(t) {
       for (const o of getChunk(cx, cy).mechs) {
         const col = ENERGY_COLOR[o.energy];
         ctx.fillStyle = col; ctx.strokeStyle = col;
-        for (const p of o.parts) {
+        const activeN = Math.round(o.parts.length * particleFrac);
+        for (let pi = 0; pi < activeN; pi++) {
+          const p = o.parts[pi];
           const fade = Math.min(1, p.life * 1.5);
           ctx.globalAlpha = 0.75 * fade;
           ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, TAU); ctx.fill();
@@ -1607,7 +2027,7 @@ function draw(t) {
   // ── HUD: высотомер ──
   const alt = Math.max(0, (SPAWN.y - player.y) / 10);
   const progress = Math.min(1, alt / 1000);
-  const mx = W - 30, my0 = H - 70, my1 = 70;
+  const mx = W - 30, my0 = H - 70, my1 = 196;   // верх — ниже миникарты
   ctx.strokeStyle = 'rgba(30,27,22,0.3)';
   ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(mx, my0); ctx.lineTo(mx, my1); ctx.stroke();
@@ -1642,12 +2062,79 @@ function draw(t) {
     }
   }
 
+  drawMinimap();
+
   // семя мира
   ctx.fillStyle = 'rgba(30,27,22,0.3)';
   ctx.font = '600 9px "Segoe UI", sans-serif';
   ctx.textAlign = 'right';
   ctx.fillText('СЕМЯ ' + WORLD_SEED, W - 14, H - 10);
   ctx.textAlign = 'left';
+}
+
+// миникарта: все объекты и игрок в реальном времени, в координатах сцены
+function drawMinimap() {
+  const size = 156, pad = 16;
+  const x0 = W - pad - size, y0 = 16;
+  const cx = x0 + size / 2, cy = y0 + size / 2;
+  const RANGE = 2600;                         // полупролёт сцены, px
+  const sc = (size / 2 - 8) / RANGE;          // масштаб сцена→карта
+
+  ctx.save();
+  // панель
+  ctx.fillStyle = 'rgba(242,235,217,0.82)';
+  ctx.strokeStyle = 'rgba(30,27,22,0.3)';
+  ctx.lineWidth = 1;
+  ctx.fillRect(x0, y0, size, size);
+  ctx.strokeRect(x0, y0, size, size);
+  ctx.fillStyle = 'rgba(30,27,22,0.5)';
+  ctx.font = '700 9px "Segoe UI", sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('КАРТА', x0 + 9, y0 + 13);
+
+  ctx.beginPath(); ctx.rect(x0 + 1, y0 + 1, size - 2, size - 2); ctx.clip();
+
+  // объекты в диапазоне (пропорции и координаты сцены сохранены)
+  const pcx = Math.floor(player.x / CHUNK), pcy = Math.floor(player.y / CHUNK);
+  for (let gy = pcy - 3; gy <= pcy + 3; gy++)
+    for (let gx = pcx - 3; gx <= pcx + 3; gx++)
+      for (const o of getChunk(gx, gy).mechs) {
+        const rx = (o.x - player.x) * sc, ry = (o.y - player.y) * sc;
+        if (Math.abs(rx) > size / 2 || Math.abs(ry) > size / 2) continue;
+        const mxp = cx + rx, myp = cy + ry;
+        const rad = Math.max(1.3, Math.min(13, o.outerR * sc));
+        ctx.globalAlpha = o === dominant ? 0.95 : 0.65;
+        ctx.fillStyle = ENERGY_COLOR[o.energy];
+        ctx.beginPath(); ctx.arc(mxp, myp, rad, 0, TAU); ctx.fill();
+        if (o === dominant) {
+          ctx.globalAlpha = 0.5; ctx.strokeStyle = ENERGY_COLOR[o.energy]; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(mxp, myp, rad + 3, 0, TAU); ctx.stroke();
+        }
+      }
+  ctx.globalAlpha = 1;
+
+  // вершина — красный ориентир (метка или стрелка у кромки)
+  const sumRel = (SUMMIT_Y - player.y) * sc;
+  ctx.fillStyle = RED;
+  if (sumRel < -(size / 2 - 4)) {
+    ctx.beginPath();
+    ctx.moveTo(cx, y0 + 5); ctx.lineTo(cx - 5, y0 + 13); ctx.lineTo(cx + 5, y0 + 13);
+    ctx.closePath(); ctx.fill();
+  } else {
+    ctx.fillRect(cx - 4, cy + sumRel - 4, 8, 8);
+  }
+
+  // игрок — в центре, со стрелкой направления скорости
+  const sp = Math.hypot(player.vx, player.vy);
+  if (sp > 5) {
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + player.vx / sp * 10, cy + player.vy / sp * 10); ctx.stroke();
+  }
+  ctx.fillStyle = CREAM; ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, cy, 3.6, 0, TAU); ctx.fill(); ctx.stroke();
+
+  ctx.restore();
 }
 
 /* ════════════════════════════════════════════════════════════════

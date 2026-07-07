@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "http.server", "4173"],
       "port": 4173
+    },
+    {
+      "name": "openuniverse",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "Y:/PROUN-AI/Open-Universe", "run", "dev", "--", "--port", "4176"],
+      "port": 4176
     }
   ]
 }
