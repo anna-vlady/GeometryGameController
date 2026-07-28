@@ -133,52 +133,102 @@ export class Renderer {
     const cs = o.coreSize;
 
     if (activeLevelId === 3) {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      ctx.shadowOffsetY = cs * 0.15;
+      ctx.shadowBlur = cs * 0.25;
+
       switch (o.energy) {
-        case 0: // Sakura Rose Planet 🌸
+        case 0: { // 3D Realistic Sakura Rose Planet 🌸
+          const petGrad = ctx.createRadialGradient(-cs * 0.3, -cs * 0.3, cs * 0.1, 0, 0, cs * 1.1);
+          petGrad.addColorStop(0, '#FFE0B2');
+          petGrad.addColorStop(0.35, '#FF80AB');
+          petGrad.addColorStop(1, '#C2185B');
+          ctx.fillStyle = petGrad;
           ctx.beginPath();
           for (let p = 0; p < 12; p++) {
             const a = p * (TAU / 12);
             const px = Math.cos(a) * cs * 0.75, py = Math.sin(a) * cs * 0.75;
-            ctx.arc(px, py, cs * 0.35, 0, TAU);
+            ctx.arc(px, py, cs * 0.38, 0, TAU);
           }
-          ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.45, 0, TAU);
-          ctx.fillStyle = '#FAF0E6'; ctx.fill(); ctx.stroke();
+          ctx.fill();
+
+          // 3D Spherical Core Pistil
+          const coreGrad = ctx.createRadialGradient(-cs * 0.15, -cs * 0.15, 2, 0, 0, cs * 0.45);
+          coreGrad.addColorStop(0, '#FFFFFF');
+          coreGrad.addColorStop(0.5, '#FFF8E1');
+          coreGrad.addColorStop(1, '#FBC02D');
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.45, 0, TAU); ctx.fill();
           break;
-        case 1: // Blue Lotus Planet 🪷
+        }
+        case 1: { // 3D Realistic Blue Lotus Planet 🪷
+          const petGrad = ctx.createRadialGradient(-cs * 0.3, -cs * 0.3, cs * 0.1, 0, 0, cs * 1.1);
+          petGrad.addColorStop(0, '#E0F7FA');
+          petGrad.addColorStop(0.4, '#4DD0E1');
+          petGrad.addColorStop(1, '#00838F');
+          ctx.fillStyle = petGrad;
           ctx.beginPath();
           for (let p = 0; p < 8; p++) {
             const a = p * (TAU / 8);
             const px = Math.cos(a) * cs * 0.8, py = Math.sin(a) * cs * 0.8;
-            ctx.arc(px * 0.6, py * 0.6, cs * 0.38, 0, TAU);
+            ctx.arc(px * 0.6, py * 0.6, cs * 0.42, 0, TAU);
           }
-          ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.3, 0, TAU);
-          ctx.fillStyle = '#FAF0E6'; ctx.fill();
+          ctx.fill();
+
+          const coreGrad = ctx.createRadialGradient(-cs * 0.1, -cs * 0.1, 1, 0, 0, cs * 0.3);
+          coreGrad.addColorStop(0, '#FFFFFF');
+          coreGrad.addColorStop(1, '#80DEEA');
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.32, 0, TAU); ctx.fill();
           break;
-        case 2: // Giant Sunflower Planet 🌻
+        }
+        case 2: { // 3D Realistic Giant Sunflower Planet 🌻
+          const petGrad = ctx.createRadialGradient(-cs * 0.3, -cs * 0.3, cs * 0.1, 0, 0, cs * 1.2);
+          petGrad.addColorStop(0, '#FFF9C4');
+          petGrad.addColorStop(0.4, '#FBC02D');
+          petGrad.addColorStop(1, '#E65100');
+          ctx.fillStyle = petGrad;
           ctx.beginPath();
           for (let p = 0; p < 16; p++) {
             const a = p * (TAU / 16);
             const px = Math.cos(a) * cs * 0.9, py = Math.sin(a) * cs * 0.9;
-            ctx.arc(px * 0.7, py * 0.7, cs * 0.3, 0, TAU);
+            ctx.arc(px * 0.7, py * 0.7, cs * 0.32, 0, TAU);
           }
-          ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.5, 0, TAU);
-          ctx.fillStyle = '#2A3A2D'; ctx.fill(); ctx.stroke();
+          ctx.fill();
+
+          // 3D Spherical Seed Center
+          const seedGrad = ctx.createRadialGradient(-cs * 0.15, -cs * 0.15, 2, 0, 0, cs * 0.52);
+          seedGrad.addColorStop(0, '#6D4C41');
+          seedGrad.addColorStop(0.7, '#3E2723');
+          seedGrad.addColorStop(1, '#1B5E20');
+          ctx.fillStyle = seedGrad;
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.52, 0, TAU); ctx.fill();
           break;
-        case 3: // Violet Orchid Planet 🪻
+        }
+        case 3: { // 3D Realistic Violet Orchid Planet 🪻
+          const petGrad = ctx.createRadialGradient(-cs * 0.3, -cs * 0.3, cs * 0.1, 0, 0, cs * 1.1);
+          petGrad.addColorStop(0, '#F3E5F5');
+          petGrad.addColorStop(0.4, '#BA68C8');
+          petGrad.addColorStop(1, '#4A148C');
+          ctx.fillStyle = petGrad;
           ctx.beginPath();
           for (let p = 0; p < 6; p++) {
             const a = p * (TAU / 6);
             const px = Math.cos(a) * cs * 0.85, py = Math.sin(a) * cs * 0.85;
-            ctx.arc(px * 0.55, py * 0.55, cs * 0.42, 0, TAU);
+            ctx.arc(px * 0.55, py * 0.55, cs * 0.45, 0, TAU);
           }
-          ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.35, 0, TAU);
-          ctx.fillStyle = '#FAF0E6'; ctx.fill();
+          ctx.fill();
+
+          const coreGrad = ctx.createRadialGradient(-cs * 0.1, -cs * 0.1, 1, 0, 0, cs * 0.35);
+          coreGrad.addColorStop(0, '#FFFFFF');
+          coreGrad.addColorStop(1, '#E1BEE7');
+          ctx.fillStyle = coreGrad;
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.35, 0, TAU); ctx.fill();
           break;
+        }
       }
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
       ctx.restore();
       return;
     }

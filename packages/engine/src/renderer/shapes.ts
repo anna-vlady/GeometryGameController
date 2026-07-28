@@ -16,47 +16,68 @@ export function shadowAnd(ctx: CanvasRenderingContext2D, fillFn: (fill: boolean)
 
 export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, isNeonGlow?: boolean, levelId?: number) {
   if (levelId === 3) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowOffsetY = 3;
+    ctx.shadowBlur = 6;
     switch (i) {
-      case 0: { // Sakura Blossom Flower Petal (Notched tip) 🌸
+      case 0: { // 3D Sakura Blossom Flower Petal 🌸
+        const grad = ctx.createRadialGradient(-s * 0.3, -s * 0.3, 1, 0, 0, s * 1.4);
+        grad.addColorStop(0, '#FFE0B2');
+        grad.addColorStop(0.5, '#FF80AB');
+        grad.addColorStop(1, '#C2185B');
+        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(0, -s * 1.3);
         ctx.quadraticCurveTo(s * 1.1, -s * 0.4, s * 0.8, s * 1.1);
         ctx.lineTo(0, s * 0.7);
         ctx.lineTo(-s * 0.8, s * 1.1);
         ctx.quadraticCurveTo(-s * 1.1, -s * 0.4, 0, -s * 1.3);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -s * 0.8); ctx.lineTo(0, s * 0.5); ctx.stroke();
+        ctx.closePath(); ctx.fill();
         break;
       }
-      case 1: { // Willow Leaf Petal 🍃
+      case 1: { // 3D Willow Leaf Petal 🍃
+        const grad = ctx.createRadialGradient(-s * 0.2, -s * 0.3, 1, 0, 0, s * 1.4);
+        grad.addColorStop(0, '#E0F7FA');
+        grad.addColorStop(0.5, '#4DD0E1');
+        grad.addColorStop(1, '#00838F');
+        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(0, -s * 1.4);
         ctx.quadraticCurveTo(s * 1.0, 0, 0, s * 1.4);
         ctx.quadraticCurveTo(-s * 1.0, 0, 0, -s * 1.4);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -s * 1.1); ctx.lineTo(0, s * 1.1); ctx.stroke();
+        ctx.closePath(); ctx.fill();
         break;
       }
-      case 2: { // Ginkgo Fan Petal 🌼
+      case 2: { // 3D Ginkgo Fan Petal 🌼
+        const grad = ctx.createRadialGradient(-s * 0.2, -s * 0.3, 1, 0, 0, s * 1.4);
+        grad.addColorStop(0, '#FFF9C4');
+        grad.addColorStop(0.5, '#FBC02D');
+        grad.addColorStop(1, '#E65100');
+        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(0, s * 0.9);
         ctx.quadraticCurveTo(-s * 1.3, -s * 0.1, -s * 0.95, -s * 0.95);
         ctx.quadraticCurveTo(0, -s * 1.4, s * 0.95, -s * 0.95);
         ctx.quadraticCurveTo(s * 1.3, -s * 0.1, 0, s * 0.9);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, s * 0.7); ctx.lineTo(0, -s * 0.8); ctx.stroke();
+        ctx.closePath(); ctx.fill();
         break;
       }
-      case 3: { // Lotus Flower Petal 🪷
+      case 3: { // 3D Lotus Flower Petal 🪷
+        const grad = ctx.createRadialGradient(-s * 0.2, -s * 0.3, 1, 0, 0, s * 1.4);
+        grad.addColorStop(0, '#F3E5F5');
+        grad.addColorStop(0.5, '#BA68C8');
+        grad.addColorStop(1, '#4A148C');
+        ctx.fillStyle = grad;
         ctx.beginPath();
         ctx.moveTo(0, -s * 1.4);
         ctx.quadraticCurveTo(s * 1.35, -s * 0.2, 0, s * 1.2);
         ctx.quadraticCurveTo(-s * 1.35, -s * 0.2, 0, -s * 1.4);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -s * 0.9); ctx.lineTo(0, s * 0.8); ctx.stroke();
+        ctx.closePath(); ctx.fill();
         break;
       }
     }
+    ctx.restore();
     return;
   }
   if (isNeonGlow) {
@@ -196,17 +217,28 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         ctx.beginPath(); ctx.arc(-l * 0.2, -w / 2 - 3, 3, 0, TAU); ctx.fill();
         return;
       }
-      case 'disc': { // Forest Mushroom / Toadstool Cap 🍄
+      case 'disc': { // 3D Volumetric Mushroom Cap 🍄
         const r = l / 2;
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+        ctx.shadowOffsetY = r * 0.18;
+        ctx.shadowBlur = r * 0.3;
+        const shroomGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.4, r * 0.1, 0, 0, r * 1.2);
+        shroomGrad.addColorStop(0, '#FF8A80');
+        shroomGrad.addColorStop(0.4, '#E53935');
+        shroomGrad.addColorStop(1, '#880E4F');
+        ctx.fillStyle = shroomGrad;
         ctx.beginPath();
         ctx.arc(0, -r * 0.1, r, Math.PI, 0);
         ctx.quadraticCurveTo(0, r * 0.4, -r, 0);
-        ctx.closePath();
-        if (fill) ctx.fill(); else ctx.stroke();
-        ctx.fillStyle = '#FAF0E6';
+        ctx.closePath(); ctx.fill();
+
+        // 3D Embossed Spore Spots
+        ctx.fillStyle = '#FFF8E1';
         ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.4, r * 0.18, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.5, r * 0.22, 0, TAU); ctx.fill();
         ctx.beginPath(); ctx.arc(0, -r * 0.7, r * 0.16, 0, TAU); ctx.fill();
+        ctx.restore();
         return;
       }
       case 'ring-disc': { // Layered Water Lily Petal Blossom 🪷
@@ -237,25 +269,37 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         return;
       }
       case 'grid-cross':
-      case 'frame-box': {
-        ctx.lineWidth = 2;
-        ctx.fillRect(-3, -l / 2, 6, l);
-        ctx.strokeRect(-3, -l / 2, 6, l);
-        ctx.beginPath();
-        ctx.moveTo(-l * 0.4, -l * 0.1); ctx.lineTo(0, -l * 0.25); ctx.lineTo(l * 0.4, -l * 0.1);
-        ctx.moveTo(-l * 0.3, l * 0.15); ctx.lineTo(0, 0); ctx.lineTo(l * 0.3, l * 0.15);
-        ctx.stroke();
+      case 'frame-box': { // 3D Realistic Botanical Forest Tree 🌳
+        ctx.save();
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowOffsetY = l * 0.08;
+        ctx.shadowBlur = l * 0.18;
+
+        // 3D Cylindrical Wood Trunk
+        const trunkGrad = ctx.createLinearGradient(-5, 0, 5, 0);
+        trunkGrad.addColorStop(0, '#3E2723');
+        trunkGrad.addColorStop(0.5, '#795548');
+        trunkGrad.addColorStop(1, '#271C19');
+        ctx.fillStyle = trunkGrad;
+        ctx.fillRect(-5, -l / 2, 10, l);
+
+        // 3D Spherical Leaf Canopy Puffs
         const puffs = [
-          { x: 0, y: -l * 0.42, r: l * 0.25 },
-          { x: -l * 0.28, y: -l * 0.25, r: l * 0.2 },
-          { x: l * 0.28, y: -l * 0.25, r: l * 0.2 },
-          { x: -l * 0.22, y: 0, r: l * 0.18 },
-          { x: l * 0.22, y: 0, r: l * 0.18 }
+          { x: 0, y: -l * 0.42, r: l * 0.28 },
+          { x: -l * 0.28, y: -l * 0.25, r: l * 0.22 },
+          { x: l * 0.28, y: -l * 0.25, r: l * 0.22 },
+          { x: -l * 0.22, y: 0, r: l * 0.2 },
+          { x: l * 0.22, y: 0, r: l * 0.2 }
         ];
         for (const pf of puffs) {
-          ctx.beginPath(); ctx.arc(pf.x, pf.y, pf.r, 0, TAU);
-          ctx.fill(); ctx.stroke();
+          const puffGrad = ctx.createRadialGradient(pf.x - pf.r * 0.3, pf.y - pf.r * 0.3, pf.r * 0.1, pf.x, pf.y, pf.r * 1.1);
+          puffGrad.addColorStop(0, '#A5D6A7');
+          puffGrad.addColorStop(0.4, '#388E3C');
+          puffGrad.addColorStop(1, '#1B5E20');
+          ctx.fillStyle = puffGrad;
+          ctx.beginPath(); ctx.arc(pf.x, pf.y, pf.r, 0, TAU); ctx.fill();
         }
+        ctx.restore();
         return;
       }
       case 'needle': {
