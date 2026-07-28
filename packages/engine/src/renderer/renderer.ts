@@ -13,32 +13,39 @@ const TAU = Math.PI * 2;
 
 export class Renderer {
   ctx: CanvasRenderingContext2D;
-  W: number;
-  H: number;
+  W: number = 0;
+  H: number = 0;
   DPR: number;
   grainPattern: CanvasPattern | null = null;
   post: HTMLCanvasElement;
 
   constructor(public canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
-    this.DPR = window.devicePixelRatio || 1;
-    this.W = window.innerWidth;
-    this.H = window.innerHeight;
-    canvas.width = this.W * this.DPR;
-    canvas.height = this.H * this.DPR;
-    
+    this.DPR = Math.min(window.devicePixelRatio || 1, 2);
     this.post = document.createElement('canvas');
-    this.post.width = this.W * this.DPR;
-    this.post.height = this.H * this.DPR;
+    this.resize();
   }
 
-  resize(w: number, h: number) {
-    this.W = w;
-    this.H = h;
-    this.canvas.width = w * this.DPR;
-    this.canvas.height = h * this.DPR;
-    this.post.width = w * this.DPR;
-    this.post.height = h * this.DPR;
+  resize(w?: number, h?: number) {
+    this.DPR = Math.min(window.devicePixelRatio || 1, 2);
+    const targetW = w || this.canvas.clientWidth || window.innerWidth;
+    const targetH = h || this.canvas.clientHeight || window.innerHeight;
+    if (targetW <= 0 || targetH <= 0) return;
+
+    this.W = targetW;
+    this.H = targetH;
+
+    const bw = Math.round(targetW * this.DPR);
+    const bh = Math.round(targetH * this.DPR);
+
+    if (this.canvas.width !== bw || this.canvas.height !== bh) {
+      this.canvas.width = bw;
+      this.canvas.height = bh;
+    }
+    if (this.post.width !== bw || this.post.height !== bh) {
+      this.post.width = bw;
+      this.post.height = bh;
+    }
   }
 
   setGrain(pattern: CanvasPattern) {
@@ -266,18 +273,31 @@ export class Renderer {
     ctx.restore();
   }
 
-  draw(t: number, T: number, player: Player, fx: FxState, chunks: Map<string, any>, farChunks: Map<string, any>, dominant: Mech | null, tanks: number[], collectFlash: number[], worldSeed: number, particleFrac = 0.7) {
+  draw(t: number, T: number, player: Player, fx: FxState, chunks: Map<string, any>, farChunks: Map<string, any>, dominant: Mech | null, tanks: number[], collectFlash: number[], worldSeed: number, particleFrac = 0.7, shockwaves: any[] = [], netPlayers: any[] = [], slots?: any[]) {
+    const curW = this.canvas.clientWidth || window.innerWidth;
+    const curH = this.canvas.clientHeight || window.innerHeight;
+    if (curW > 0 && curH > 0 && (curW !== this.W || curH !== this.H)) {
+      this.resize(curW, curH);
+    }
     const { ctx, W, H, DPR } = this;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-    ctx.globalAlpha = 1;
 
-    const altN = Math.max(-1, Math.min(1, player.y / 7000));
+    const activeSlots = slots && slots.length > 0
+      ? slots.filter((s: any) => s.active)
+      : [{ num: 1, name: 'Игрок 1', color: '#BF3B2B', player, tanks, collectFlash }];
+
+    const camX = activeSlots.reduce((acc: number, s: any) => acc + s.player.x, 0) / activeSlots.length;
+    const camY = activeSlots.reduce((acc: number, s: any) => acc + s.player.y, 0) / activeSlots.length;
+
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    // 1. Screen-space paper background
+    const altN = Math.max(-1, Math.min(1, camY / 7000));
     const bg = ctx.createLinearGradient(0, 0, 0, H);
     bg.addColorStop(0, mixColor(PAPER_LIGHT, PAPER_DARK, clamp01(0.5 + altN * 0.5 - 0.18)));
     bg.addColorStop(1, mixColor(PAPER_LIGHT, PAPER_DARK, clamp01(0.5 + altN * 0.5 + 0.18)));
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, W, H);
-    
+
     if (this.grainPattern) {
       ctx.globalAlpha = 0.5;
       ctx.fillStyle = this.grainPattern;
@@ -285,14 +305,14 @@ export class Renderer {
       ctx.globalAlpha = 1;
     }
 
-    // Far architecture
+    // 2. Far architecture (parallax)
     ctx.save();
-    ctx.translate(W / 2 - player.x * FAR_FACTOR, H / 2 - player.y * FAR_FACTOR);
+    ctx.translate(W / 2 - camX * FAR_FACTOR, H / 2 - camY * FAR_FACTOR);
     ctx.strokeStyle = 'rgba(30,27,22,0.07)';
-    const fx0 = Math.floor((player.x * FAR_FACTOR - W / 2) / FAR_CHUNK) - 1;
-    const fx1 = Math.floor((player.x * FAR_FACTOR + W / 2) / FAR_CHUNK) + 1;
-    const fy0 = Math.floor((player.y * FAR_FACTOR - H / 2) / FAR_CHUNK) - 1;
-    const fy1 = Math.floor((player.y * FAR_FACTOR + H / 2) / FAR_CHUNK) + 1;
+    const fx0 = Math.floor((camX * FAR_FACTOR - W / 2) / FAR_CHUNK) - 1;
+    const fx1 = Math.floor((camX * FAR_FACTOR + W / 2) / FAR_CHUNK) + 1;
+    const fy0 = Math.floor((camY * FAR_FACTOR - H / 2) / FAR_CHUNK) - 1;
+    const fy1 = Math.floor((camY * FAR_FACTOR + H / 2) / FAR_CHUNK) + 1;
     for (let cy = fy0; cy <= fy1; cy++) {
       for (let cx = fx0; cx <= fx1; cx++) {
         const arr = farChunks.get(cx + ',' + cy) || [];
@@ -305,16 +325,144 @@ export class Renderer {
     }
     ctx.restore();
 
-    // World
+    // 3. Main World
     ctx.save();
-    if (fx.distort > 0.02)
+    if (fx.distort > 0.05)
       ctx.translate((Math.random() - 0.5) * 7 * fx.distort, (Math.random() - 0.5) * 7 * fx.distort);
-    ctx.translate(W / 2 - player.x, H / 2 - player.y);
+    ctx.translate(W / 2 - camX, H / 2 - camY);
 
-    const x0 = Math.floor((player.x - W / 2 - 500) / CHUNK);
-    const x1 = Math.floor((player.x + W / 2 + 500) / CHUNK);
-    const y0 = Math.floor((player.y - H / 2 - 500) / CHUNK);
-    const y1 = Math.floor((player.y + H / 2 + 500) / CHUNK);
+    // Local Co-op Slipstream Tethers & Covalent Molecular Orbits
+    if (activeSlots.length > 1) {
+      for (let i = 0; i < activeSlots.length; i++) {
+        for (let j = i + 1; j < activeSlots.length; j++) {
+          const s1 = activeSlots[i], s2 = activeSlots[j];
+          const dist = Math.hypot(s2.player.x - s1.player.x, s2.player.y - s1.player.y);
+          if (dist < 3960) {
+            ctx.save();
+            if (dist < 450) {
+              ctx.strokeStyle = 'rgba(201, 155, 63, 0.55)';
+              ctx.lineWidth = 2;
+              ctx.setLineDash([8, 6]);
+              ctx.lineDashOffset = -t * 80;
+              ctx.beginPath();
+              ctx.moveTo(s1.player.x, s1.player.y);
+              ctx.lineTo(s2.player.x, s2.player.y);
+              ctx.stroke();
+            }
+
+            // Fluid Organic Jellyfish Undulating Waves ("Медуза в воде" + Oval Stadium Envelope 3960px)
+            if (dist < 3960) {
+              const cx = (s1.player.x + s2.player.x) / 2;
+              const cy = (s1.player.y + s2.player.y) / 2;
+              const dx = s2.player.x - s1.player.x;
+              const dy = s2.player.y - s1.player.y;
+              const dLen = Math.hypot(dx, dy);
+              const axisX = dLen > 0.001 ? dx / dLen : 1;
+              const axisY = dLen > 0.001 ? dy / dLen : 0;
+              const perpX = -axisY;
+              const perpY = axisX;
+
+              const bPhase = t * 2.0 + Math.sin(t * 0.35) * 1.5;
+              const strokePulse = Math.sin(bPhase);
+              const tension = (s1 as any)._tetherTension || 0;
+              const orbitAlpha = Math.max(0.1, (1 - dist / 3960) * (1 - tension * 0.75));
+
+              for (let k = 0; k < 4; k++) {
+                const semiA = (dLen * 0.5) + 65 + k * 22 + strokePulse * (8 + k * 2);
+                const semiB = 75 + k * 20 + strokePulse * (8 + k * 2);
+                ctx.strokeStyle = ENERGY_COLOR[k];
+                ctx.globalAlpha = (0.38 + strokePulse * 0.12) * orbitAlpha;
+                ctx.lineWidth = 1.4 + strokePulse * 0.6;
+                ctx.setLineDash([8, 6]);
+                ctx.lineDashOffset = -bPhase * 30 * (k % 2 === 0 ? 1 : -1);
+
+                ctx.beginPath();
+                const steps = 48;
+                for (let i = 0; i <= steps; i++) {
+                  const angle = (i / steps) * TAU;
+                  // Organic sine wave undulation along the oval perimeter ("овальный купол медузы")
+                  const wave = Math.sin(angle * 3 + bPhase + k) * (8 + strokePulse * 4) + Math.cos(angle * 2 - bPhase * 0.7) * 5;
+                  const rA = semiA + wave;
+                  const rB = semiB + wave;
+                  const wx = cx + (Math.cos(angle) * rA) * axisX + (Math.sin(angle) * rB) * perpX;
+                  const wy = cy + (Math.cos(angle) * rA) * axisY + (Math.sin(angle) * rB) * perpY;
+                  if (i === 0) ctx.moveTo(wx, wy);
+                  else ctx.lineTo(wx, wy);
+                }
+                ctx.closePath();
+                ctx.stroke();
+              }
+            }
+            ctx.restore();
+          }
+        }
+      }
+    }
+
+    // Patapon Shockwaves
+    if (shockwaves) {
+      for (const wave of shockwaves) {
+        ctx.save();
+        ctx.translate(wave.x, wave.y);
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = RED;
+        ctx.globalAlpha = Math.max(0, wave.life * 0.85);
+        ctx.beginPath(); ctx.arc(0, 0, wave.r, 0, TAU); ctx.stroke();
+
+        ctx.strokeStyle = INK; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(0, 0, wave.r * 0.92, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, wave.r * 1.08, 0, TAU); ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // NetPlayers (from separate browser instances)
+    if (netPlayers && netPlayers.length > 0) {
+      for (const np of netPlayers) {
+        if (!np || typeof np.x !== 'number' || typeof np.y !== 'number' || isNaN(np.x) || isNaN(np.y)) continue;
+        
+        ctx.save();
+        ctx.translate(np.x, np.y);
+
+        ctx.fillStyle = 'rgba(191, 59, 43, 0.12)';
+        ctx.beginPath(); ctx.arc(0, 0, 24, 0, TAU); ctx.fill();
+
+        ctx.fillStyle = CREAM; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = INK; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(np.name || np.id, 0, -28);
+
+        const tanksArr = np.tanks || [6, 6, 6, 6];
+        for (let i = 0; i < 4; i++) {
+          let ox = 0, oy = 0;
+          if (np.orbs && np.orbs[i]) {
+            ox = np.orbs[i].ox;
+            oy = np.orbs[i].oy;
+          } else {
+            const angle = t * 2.2 + i * (TAU / 4);
+            ox = Math.cos(angle) * 32;
+            oy = Math.sin(angle) * 32;
+          }
+
+          const s = (9 + (tanksArr[i] || 0) * 0.5);
+          ctx.save();
+          ctx.translate(ox, oy);
+          ctx.rotate(t * 1.5 + i);
+          ctx.fillStyle = ENERGY_COLOR[i];
+          ctx.strokeStyle = ENERGY_COLOR[i];
+          drawGlyph(ctx, i, s);
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    const x0 = Math.floor((camX - W / 2 - 500) / CHUNK);
+    const x1 = Math.floor((camX + W / 2 + 500) / CHUNK);
+    const y0 = Math.floor((camY - H / 2 - 500) / CHUNK);
+    const y1 = Math.floor((camY + H / 2 + 500) / CHUNK);
     
     for (let cy = y0; cy <= y1; cy++)
       for (let cx = x0; cx <= x1; cx++) {
@@ -366,78 +514,271 @@ export class Renderer {
     }
     ctx.globalAlpha = 1;
 
-    // Orbs targets
-    for (const orb of player.orbs) {
-      if (!orb.target || orb.score < 0.03) continue;
-      ctx.strokeStyle = ENERGY_COLOR[orb.energy];
-      ctx.globalAlpha = orb.score * 0.75;
-      ctx.lineWidth = 1.6;
-      ctx.setLineDash([7, 7]);
-      ctx.lineDashOffset = -t * 60;
-      ctx.beginPath();
-      ctx.moveTo(player.x + orb.ox, player.y + orb.oy);
-      ctx.lineTo(orb.target.x, orb.target.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.globalAlpha = 1;
+    // Organic Jellyfish Membrane Contour for Co-op Players
+    if (activeSlots.length > 1) {
+      for (let i = 0; i < activeSlots.length; i++) {
+        for (let j = i + 1; j < activeSlots.length; j++) {
+          const s1 = activeSlots[i], s2 = activeSlots[j];
+          const dx = s2.player.x - s1.player.x;
+          const dy = s2.player.y - s1.player.y;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist < 3960) {
+            const tension = (s1 as any)._tetherTension || 0;
+            const membraneAlpha = Math.max(0, (1 - dist / 3960) * (1 - tension * 0.85));
+
+            if (membraneAlpha > 0.02) {
+              const cx = (s1.player.x + s2.player.x) / 2;
+              const cy = (s1.player.y + s2.player.y) / 2;
+              const angle = Math.atan2(dy, dx);
+
+              const breathe = Math.sin(t * 3.2 + i * 1.5) * 8;
+              const semiA = (dist * 0.5) + 68 + breathe;
+              const semiB = 58 + breathe * 0.6;
+
+              ctx.save();
+              ctx.translate(cx, cy);
+              ctx.rotate(angle);
+
+              // Outer translucent organic jelly bubble fill
+              ctx.beginPath();
+              ctx.ellipse(0, 0, semiA, semiB, 0, 0, TAU);
+              ctx.fillStyle = 'rgba(191, 59, 43, 0.08)';
+              ctx.globalAlpha = membraneAlpha;
+              ctx.fill();
+
+              // Pulsing dashed organic contour line
+              ctx.strokeStyle = '#BF3B2B';
+              ctx.lineWidth = 1.8;
+              ctx.setLineDash([12, 10]);
+              ctx.lineDashOffset = -t * 40;
+              ctx.globalAlpha = membraneAlpha * 0.65;
+              ctx.stroke();
+              ctx.setLineDash([]);
+              ctx.restore();
+            }
+          }
+        }
+      }
     }
 
-    // Trails
-    for (const orb of player.orbs) {
-      const n = orb.trail.length;
-      ctx.strokeStyle = ENERGY_COLOR[orb.energy];
-      for (let j = 1; j < n; j++) {
-        ctx.globalAlpha = (j / n) * 0.35;
-        ctx.lineWidth = (j / n) * 3;
+    // Draw each active local slot player
+    for (const slot of activeSlots) {
+      const p = slot.player;
+      const sTanks = slot.tanks || tanks;
+      const sFlash = slot.collectFlash || collectFlash;
+
+      // Orbs targets
+      for (const orb of p.orbs) {
+        if (!orb.target || orb.score < 0.03) continue;
+        ctx.strokeStyle = ENERGY_COLOR[orb.energy];
+        ctx.globalAlpha = orb.score * 0.75;
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([7, 7]);
+        ctx.lineDashOffset = -t * 60;
         ctx.beginPath();
-        ctx.moveTo(orb.trail[j - 1].x, orb.trail[j - 1].y);
-        ctx.lineTo(orb.trail[j].x, orb.trail[j].y);
+        ctx.moveTo(p.x + orb.ox, p.y + orb.oy);
+        ctx.lineTo(orb.target.x, orb.target.y);
         ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
       }
-    }
-    ctx.globalAlpha = 1;
 
-    // Player core
-    ctx.beginPath();
-    ctx.arc(player.x, player.y, 7, 0, TAU);
-    ctx.fillStyle = CREAM; ctx.fill();
-    ctx.lineWidth = 2.5; ctx.strokeStyle = INK; ctx.stroke();
-
-    for (let i = 0; i < 4; i++) {
-      if (collectFlash[i] < 0.04) continue;
-      ctx.strokeStyle = ENERGY_COLOR[i];
-      ctx.globalAlpha = collectFlash[i] * 0.6;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(player.x, player.y, 14 + (1 - collectFlash[i]) * 34, 0, TAU);
-      ctx.stroke();
+      // Trails
+      for (const orb of p.orbs) {
+        const n = orb.trail.length;
+        ctx.strokeStyle = ENERGY_COLOR[orb.energy];
+        for (let j = 1; j < n; j++) {
+          ctx.globalAlpha = (j / n) * 0.35;
+          ctx.lineWidth = (j / n) * 3;
+          ctx.beginPath();
+          ctx.moveTo(orb.trail[j - 1].x, orb.trail[j - 1].y);
+          ctx.lineTo(orb.trail[j].x, orb.trail[j].y);
+          ctx.stroke();
+        }
+      }
       ctx.globalAlpha = 1;
-    }
 
-    // Four energies
-    for (let i = 0; i < 4; i++) {
-      const orb = player.orbs[i];
-      const x = player.x + orb.ox, y = player.y + orb.oy;
-      const s = (9 + tanks[i] * 0.5) * (1 + orb.score * 0.4);
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(orb.phase * 1.4 + i);
-      ctx.fillStyle = ENERGY_COLOR[i];
-      ctx.strokeStyle = ENERGY_COLOR[i];
-      drawGlyph(ctx, i, s);
-      if (orb.score > 0.05) {
-        ctx.globalAlpha = orb.score * 0.35;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(0, 0, s * 2.1, 0, TAU); ctx.stroke();
-        ctx.globalAlpha = 1;
+      // 2.7x Magnetism Surge Aura
+      if (slot.magnetTimer && slot.magnetTimer > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#C99B3F';
+        ctx.lineWidth = 2.2;
+        ctx.globalAlpha = 0.42 + Math.sin(t * 14) * 0.18;
+        ctx.setLineDash([12, 8]);
+        ctx.lineDashOffset = -t * 110;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 135, 0, TAU);
+        ctx.stroke();
+        ctx.restore();
       }
-      if (orb.flashR > 0.04) {
-        ctx.globalAlpha = orb.flashR * 0.5;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.arc(0, 0, s * (1.4 + (1 - orb.flashR) * 1.6), 0, TAU); ctx.stroke();
-        ctx.globalAlpha = 1;
+
+      // 1. Breathing Outer Signature Color Aura (Radius ~24px / Diameter 48px)
+      const slotColor = slot.color || ENERGY_COLOR[(slot.num - 1) % 4];
+      const auraR = 22 + Math.sin(t * 3.5 + slot.num) * 3;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, auraR, 0, TAU);
+      ctx.fillStyle = slotColor;
+      ctx.globalAlpha = 0.18;
+      ctx.fill();
+      ctx.strokeStyle = slotColor;
+      ctx.lineWidth = 1.8;
+      ctx.globalAlpha = 0.38;
+      ctx.stroke();
+      ctx.restore();
+
+      // 2. Large Distinct Suprematist Pilot Emblem (Radius ~18px / Diameter 36px)
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      const speed = Math.hypot(p.vx || 0, p.vy || 0);
+      if (speed > 15) {
+        ctx.rotate(Math.atan2(p.vy, p.vx));
+      }
+
+      const pType = (slot.num - 1) % 4;
+      switch (pType) {
+        case 0: // Player 1: Red Winged Disc Emblem
+          shadowAnd(ctx, () => {
+            // Crosswing stabilizers
+            ctx.fillStyle = INK;
+            ctx.fillRect(-18, -3, 36, 6);
+            ctx.fillRect(-3, -18, 6, 36);
+            // Main Red Circle
+            ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU);
+            ctx.fillStyle = '#D84234'; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = CREAM; ctx.stroke();
+            // White Core Dot
+            ctx.beginPath(); ctx.arc(0, 0, 5, 0, TAU);
+            ctx.fillStyle = CREAM; ctx.fill();
+          });
+          break;
+
+        case 1: // Player 2: Black Double Diamond Crystal Emblem
+          shadowAnd(ctx, () => {
+            ctx.save(); ctx.rotate(Math.PI / 4);
+            // Outer Diamond Frame
+            ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+            ctx.strokeRect(-16, -16, 32, 32);
+            // Inner Solid Black Diamond
+            ctx.fillStyle = '#2B2D31'; ctx.fillRect(-12, -12, 24, 24);
+            ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(-12, -12, 24, 24);
+            // Core White Accent
+            ctx.fillStyle = CREAM; ctx.fillRect(-4, -4, 8, 8);
+            ctx.restore();
+          });
+          break;
+
+        case 2: // Player 3: Gold Triple Chevron Arrowhead Emblem
+          shadowAnd(ctx, () => {
+            ctx.fillStyle = '#C99B3F'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+            for (let step = 0; step < 3; step++) {
+              const ox = step * 6 - 8;
+              ctx.beginPath();
+              ctx.moveTo(ox + 12, 0);
+              ctx.lineTo(ox - 6, -12);
+              ctx.lineTo(ox - 2, 0);
+              ctx.lineTo(ox - 6, 12);
+              ctx.closePath();
+              ctx.fill(); ctx.stroke();
+            }
+            ctx.beginPath(); ctx.arc(4, 0, 4, 0, TAU);
+            ctx.fillStyle = CREAM; ctx.fill();
+          });
+          break;
+
+        case 3: // Player 4: Steel-Blue Cross-Grid Shield Emblem
+        default:
+          shadowAnd(ctx, () => {
+            ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.arc(0, 0, 16, 0, TAU); ctx.stroke();
+            ctx.fillStyle = '#3F5666'; ctx.fillRect(-11, -11, 22, 22);
+            ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(-11, -11, 22, 22);
+            ctx.fillStyle = CREAM;
+            ctx.fillRect(-8, -2, 16, 4);
+            ctx.fillRect(-2, -8, 4, 16);
+          });
+          break;
       }
       ctx.restore();
+
+      // 3. High-Contrast Player Slot Badge (P1 / P2 / P3 / P4)
+      ctx.save();
+      ctx.fillStyle = slotColor;
+      ctx.beginPath();
+      if ((ctx as any).roundRect) {
+        (ctx as any).roundRect(p.x - 15, p.y - 36, 30, 16, 8);
+      } else {
+        ctx.rect(p.x - 15, p.y - 36, 30, 16);
+      }
+      ctx.fill();
+      ctx.strokeStyle = INK;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#F9F7F1';
+      ctx.font = '900 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`P${slot.num}`, p.x, p.y - 24);
+      ctx.restore();
+
+      for (let i = 0; i < 4; i++) {
+        if (sFlash[i] < 0.04) continue;
+        ctx.strokeStyle = ENERGY_COLOR[i];
+        ctx.globalAlpha = sFlash[i] * 0.6;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 14 + (1 - sFlash[i]) * 34, 0, TAU);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // Four energies
+      for (let i = 0; i < 4; i++) {
+        const orb = p.orbs[i];
+        const x = p.x + orb.ox, y = p.y + orb.oy;
+        const s = (9 + sTanks[i] * 0.5) * (1 + orb.score * 0.4);
+
+        // Cartoon Squash & Stretch calculation based on orb motion velocity
+        const tr = orb.trail;
+        let moveAngle = 0;
+        let orbSpeed = 0;
+        if (tr && tr.length >= 2) {
+          const last = tr[tr.length - 1];
+          const prev = tr[tr.length - 2];
+          const dx = last.x - prev.x;
+          const dy = last.y - prev.y;
+          orbSpeed = Math.hypot(dx, dy);
+          if (orbSpeed > 0.1) moveAngle = Math.atan2(dy, dx);
+        }
+
+        const stretch = 1.0 + Math.min(0.42, orbSpeed * 0.035);
+        const squash = 1.0 / stretch;
+
+        ctx.save();
+        ctx.translate(x, y);
+        // Align stretch axis along velocity vector
+        ctx.rotate(moveAngle);
+        ctx.scale(stretch, squash);
+        // Rotate internal glyph relative to motion axis
+        ctx.rotate(orb.phase * 1.4 + i - moveAngle);
+
+        ctx.fillStyle = ENERGY_COLOR[i];
+        ctx.strokeStyle = ENERGY_COLOR[i];
+        drawGlyph(ctx, i, s);
+        if (orb.score > 0.05) {
+          ctx.globalAlpha = orb.score * 0.35;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(0, 0, s * 2.1, 0, TAU); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        if (orb.flashR > 0.04) {
+          ctx.globalAlpha = orb.flashR * 0.5;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(0, 0, s * (1.4 + (1 - orb.flashR) * 1.6), 0, TAU); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+        ctx.restore();
+      }
     }
 
     ctx.restore(); // Restore World transform
@@ -450,25 +791,19 @@ export class Renderer {
     ctx.fillRect(0, 0, W, H);
 
     // Minimap
-    this.drawMinimap(player, chunks, dominant);
+    this.drawMinimap(player, chunks, dominant, netPlayers);
 
-    // Post-effects
-    if (fx.distort > 0.025) {
+    // Post-effects: subtle chromatic glow without screen-slicing
+    if (fx.distort > 0.08) {
       const pc = this.post.getContext('2d')!;
       pc.clearRect(0, 0, this.post.width, this.post.height);
       pc.drawImage(this.canvas, 0, 0);
+
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.globalAlpha = Math.min(0.3, fx.distort * 0.28);
-      ctx.drawImage(this.post, 7 * fx.distort * DPR, 0);
-      ctx.drawImage(this.post, -7 * fx.distort * DPR, 0);
-      ctx.globalAlpha = 1;
-      const bands = 22, bh = Math.ceil(this.post.height / bands);
-      const ph = performance.now() * 0.045;
-      for (let i = 0; i < bands; i++) {
-        const off = Math.sin(i * 1.7 + ph) * 15 * fx.distort * DPR;
-        ctx.drawImage(this.post, 0, i * bh, this.post.width, bh, off, i * bh, this.post.width, bh);
-      }
+      ctx.globalAlpha = Math.min(0.2, fx.distort * 0.18);
+      ctx.drawImage(this.post, 3 * fx.distort * DPR, 0);
+      ctx.drawImage(this.post, -3 * fx.distort * DPR, 0);
       ctx.restore();
     }
 
@@ -480,10 +815,10 @@ export class Renderer {
     }
   }
 
-  drawMinimap(player: Player, chunks: Map<string, any>, dominant: Mech | null) {
+  drawMinimap(player: Player, chunks: Map<string, any>, dominant: Mech | null, netPlayers: any[] = []) {
     const { ctx, W } = this;
-    const size = 156, pad = 16;
-    const x0 = W - pad - size, y0 = 16;
+    const size = 134;
+    const x0 = W - size - 64, y0 = 16;
     const cx = x0 + size / 2, cy = y0 + size / 2;
     const RANGE = 2600;
     const sc = (size / 2 - 8) / RANGE;
@@ -522,6 +857,47 @@ export class Renderer {
       }
     }
     ctx.globalAlpha = 1;
+
+    // Render multiplayer pilots on minimap
+    if (netPlayers && netPlayers.length > 0) {
+      for (const np of netPlayers) {
+        if (!np || typeof np.x !== 'number' || typeof np.y !== 'number' || isNaN(np.x) || isNaN(np.y)) continue;
+        const dx = np.x - player.x;
+        const dy = np.y - player.y;
+        const dist = Math.hypot(dx, dy);
+        const angle = Math.atan2(dy, dx);
+
+        if (dist <= RANGE * 1.8) {
+          const mxp = cx + dx * sc;
+          const myp = cy + dy * sc;
+          ctx.save();
+          ctx.translate(mxp, myp);
+          ctx.fillStyle = '#BF3B2B';
+          ctx.strokeStyle = '#1E1B16';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 5, 0, TAU);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Edge compass arrow pointing towards peer pilot
+          const edgeR = size / 2 - 12;
+          const ex = cx + Math.cos(angle) * edgeR;
+          const ey = cy + Math.sin(angle) * edgeR;
+
+          ctx.save();
+          ctx.translate(ex, ey);
+          ctx.rotate(angle);
+          ctx.fillStyle = '#BF3B2B';
+          ctx.beginPath();
+          ctx.moveTo(6, 0); ctx.lineTo(-5, -4); ctx.lineTo(-5, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+    }
 
     const sumRel = (SUMMIT_Y - player.y) * sc;
     ctx.fillStyle = RED;

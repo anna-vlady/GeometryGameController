@@ -143,12 +143,73 @@ export class AudioManager {
     });
   }
 
+  resume() {
+    if (this.ac && this.ac.state === 'suspended') {
+      this.ac.resume().catch(() => {});
+    }
+  }
+
   isAudioOn() {
     return !!this.ac && this.ac.state === 'running' && !this.muted;
   }
 
   clockNow() {
     return this.ac ? this.ac.currentTime : performance.now() / 1000;
+  }
+
+  playPata() {
+    if (!this.isAudioOn() || !this.ac) return;
+    const t0 = this.ac.currentTime;
+    // Energy 0 (Red Suprematist Percussive Voice)
+    this.voice({
+      f: modeFreq(0, 0, 2),
+      when: t0,
+      dur: 0.35,
+      e: 0,
+      g: 0.35,
+      gliss: -4,
+      send: 0.25
+    });
+  }
+
+  playPon() {
+    if (!this.isAudioOn() || !this.ac) return;
+    const t0 = this.ac.currentTime;
+    // Energy 2 (Ochre/Gold Resonant Voice)
+    this.voice({
+      f: modeFreq(2, 4, 3),
+      when: t0,
+      dur: 0.45,
+      e: 2,
+      g: 0.4,
+      gliss: 3,
+      vib: 0.8,
+      send: 0.35
+    });
+  }
+
+  playComboFanfare() {
+    if (!this.isAudioOn() || !this.ac) return;
+    const t0 = this.ac.currentTime;
+    // 4-voice Suprematist Phrase sweep across all 4 energies (0, 1, 2, 3)
+    const phrase = [
+      { e: 0, deg: 0, oct: 2, dur: 0.5, g: 0.32, gliss: 2 },
+      { e: 1, deg: 2, oct: 2, dur: 0.55, g: 0.35, gliss: 3 },
+      { e: 2, deg: 4, oct: 3, dur: 0.6, g: 0.38, gliss: 4 },
+      { e: 3, deg: 7, oct: 3, dur: 0.8, g: 0.45, gliss: 6 }
+    ];
+
+    phrase.forEach((note, idx) => {
+      this.voice({
+        f: modeFreq(note.e, note.deg, note.oct),
+        when: t0 + idx * 0.09,
+        dur: note.dur,
+        e: note.e,
+        g: note.g,
+        gliss: note.gliss,
+        send: 0.4
+      });
+    });
   }
 
   voice(opt: VoiceOptions) {
@@ -262,19 +323,54 @@ export class AudioManager {
     src.start(t0, Math.random()); src.stop(t0 + 0.16);
   }
 
-  chirp(e: number, fill: number) {
+  private _lastPickupTime = 0;
+
+  playParticlePickup(e: number = 0, fill: number = 0.5) {
     if (!this.isAudioOn() || !this.ac) return;
-    const t0 = this.ac.currentTime;
-    const f = Math.min(modeFreq(e, (fill * 7) | 0, OCT[e] + 2), 5200);
-    const o = this.ac.createOscillator(); o.type = 'triangle';
-    o.frequency.setValueAtTime(f * 0.94, t0);
-    o.frequency.exponentialRampToValueAtTime(f, t0 + 0.05);
+    const now = this.ac.currentTime;
+    // Rate-limit pickup sound triggers to max ~21 sounds/sec to protect Web Audio buffer from overload cutout
+    if (now - this._lastPickupTime < 0.046) return;
+    this._lastPickupTime = now;
+
+    const t0 = now + 0.003;
+    const f = Math.min(modeFreq(e % 4, ((fill * 7) | 0) % 7, OCT[e % 4] + 2), 4800);
+
+    // Soft velvety sine core with gentle frequency modulation
+    const osc = this.ac.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f * 0.96, t0);
+    osc.frequency.exponentialRampToValueAtTime(f * 1.04, t0 + 0.08);
+
+    // Soft attack (12ms) - removes sharp transients/clicks and limits gain to 0.05
     const amp = this.ac.createGain();
     amp.gain.setValueAtTime(0, t0);
-    amp.gain.linearRampToValueAtTime(0.06, t0 + 0.006);
-    amp.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.11);
-    o.connect(amp); amp.connect(this.plrGain!);
-    o.start(t0); o.stop(t0 + 0.15);
+    amp.gain.linearRampToValueAtTime(0.05, t0 + 0.012);
+    amp.gain.exponentialRampToValueAtTime(0.0003, t0 + 0.22);
+
+    // Airy bandpass filter for breathing spatial texture
+    const filter = this.ac.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2100, t0);
+    filter.Q.value = 2.2;
+
+    osc.connect(filter);
+    filter.connect(amp);
+    amp.connect(this.plrGain || this.bus!);
+
+    // Soft spatial reverb send
+    if (this.reverbIn) {
+      const revSend = this.ac.createGain();
+      revSend.gain.value = 0.18;
+      amp.connect(revSend);
+      revSend.connect(this.reverbIn);
+    }
+
+    osc.start(t0);
+    osc.stop(t0 + 0.24);
+  }
+
+  chirp(e: number, fill: number) {
+    this.playParticlePickup(e, fill);
   }
 
   bell(f: number, when: number, g: number, decay: number) {
@@ -343,6 +439,93 @@ export class AudioManager {
   // освобождает AudioContext при размонтировании (иначе он продолжает жить
   // в фоне после ухода со страницы игры — и StrictMode-ремаунт, и обычная
   // навигация Меню↔Игра иначе оставляют висящий контекст)
+  updatePlayerAudio(slots: any[], dt: number, t: number) {
+    if (!this.isAudioOn() || !this.ac) return;
+
+    const activeSlots = slots.filter(s => s && s.active);
+    if (activeSlots.length === 0) return;
+
+    const isAnyCoop = activeSlots.length > 1;
+
+    for (const slot of activeSlots) {
+      const speed = Math.hypot(slot.player?.vx || 0, slot.player?.vy || 0);
+      const isBoosting = slot.boostTimer > 0;
+      const isMoving = speed > 25 || isBoosting;
+
+      // Pulse interval: modulated by breathing rhythm ("замедляясь и ускоряясь")
+      const breathFactor = 1.0 + 0.38 * Math.cos(t * 0.35 + slot.num * 0.8);
+      const baseStep = isMoving ? (isBoosting ? 0.09 : Math.max(0.11, 0.26 - (speed / 520) * 0.15)) : 0.45;
+      const stepDur = Math.max(0.08, baseStep * breathFactor);
+
+      if (!slot._audioNextStep) slot._audioNextStep = t + 0.05 * slot.num;
+
+      if (t >= slot._audioNextStep) {
+        slot._audioNextStep = t + stepDur;
+        slot._audioStepIdx = ((slot._audioStepIdx || 0) + 1) % 8;
+        const step = slot._audioStepIdx;
+
+        const baseEnergy = (slot.num - 1) % 4;
+        const rootDegs = [0, 2, 4, 5, 7, 9, 11, 12];
+        const octaves = isMoving ? [2, 3, 3, 4, 3, 4, 3, 5] : [2, 2, 3, 2, 3, 2, 3, 2];
+        const freq = modeFreq(baseEnergy, rootDegs[step % rootDegs.length], octaves[step % octaves.length]);
+
+        const gain = isBoosting ? 0.09 : (0.025 + Math.min(speed / 520, 1.0) * 0.045);
+
+        if (isMoving) {
+          // Dynamic experimental active rhythm per player slot!
+          if (slot.num === 1) {
+            // Player 1 (Red): Resonant FM sub-bass pulse + glissando
+            this.voice({
+              f: freq * 0.75,
+              when: this.ac.currentTime,
+              dur: isBoosting ? 0.22 : 0.14,
+              e: 0,
+              g: gain * 1.3,
+              gliss: isBoosting ? 4 : -2,
+              vib: 0.5,
+              send: 0.2
+            });
+          } else if (slot.num === 2) {
+            // Player 2 (Black): Metallic percussive click + bird burst accent on accents
+            this.click(freq * 1.8, this.ac.currentTime, gain * 1.4);
+            if (step === 0 || step === 4) {
+              this.birdBurst(freq * 1.2, this.ac.currentTime + 0.02, gain * 0.8);
+            }
+          } else if (slot.num === 3) {
+            // Player 3 (Gold): Shimmering FM bell & harmonic overtone chime
+            this.bell(freq * 1.25, this.ac.currentTime, gain * 1.1, isBoosting ? 0.5 : 0.25);
+          } else {
+            // Player 4 (Blue): Plucked liquid synth & noise chirp
+            this.pluck(freq, this.ac.currentTime, gain * 1.2);
+            if (step % 2 === 1) {
+              this.chirp(3, step / 8);
+            }
+          }
+        } else {
+          // Calm, breathing, non-intrusive ambient idle rhythm
+          if (step === 0 || step === 4) {
+            const idleGain = 0.014;
+            if (slot.num === 1) {
+              this.pluck(freq * 0.5, this.ac.currentTime, idleGain);
+            } else if (slot.num === 2) {
+              this.click(freq * 0.8, this.ac.currentTime, idleGain * 0.8);
+            } else if (slot.num === 3) {
+              this.bell(freq, this.ac.currentTime, idleGain * 0.9, 0.3);
+            } else {
+              this.chirp(baseEnergy, 0.2);
+            }
+          }
+        }
+
+        // Tether Fusion Harmonic Chord (when 2+ players are connected)
+        if (isAnyCoop && step === 0) {
+          const fusionFreq = modeFreq(0, 7, 3);
+          this.bell(fusionFreq, this.ac.currentTime + 0.05, 0.015, 0.6);
+        }
+      }
+    }
+  }
+
   dispose() {
     if (this.ac) {
       this.ac.close().catch(() => {});

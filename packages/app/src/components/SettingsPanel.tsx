@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ProunEngine, updatePhysicsParams, G_GRAV, GRAV_CAP, GRAV_SWIRL, CENTER_K, RADIAL_DAMP, DRAG_COAST, DRAG_THRUST, CAP_THRESH, REL_THRESH, SWITCH_FAC } from '@proun/engine';
+import { ProunEngine, updatePhysicsParams, G_GRAV, GRAV_CAP, GRAV_SWIRL, CENTER_K, RADIAL_DAMP, DRAG_COAST, DRAG_THRUST, CAP_THRESH, REL_THRESH, SWITCH_FAC, RHYTHM_TOLERANCE } from '@proun/engine';
 
 interface SettingsPanelProps {
   engine: ProunEngine | null;
@@ -11,7 +11,8 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
   // Гравитация / физика
   const [params, setParams] = useState({
     G_GRAV, GRAV_CAP, GRAV_SWIRL, CENTER_K, RADIAL_DAMP,
-    DRAG_COAST, DRAG_THRUST, CAP_THRESH, REL_THRESH, SWITCH_FAC
+    DRAG_COAST, DRAG_THRUST, CAP_THRESH, REL_THRESH, SWITCH_FAC,
+    RHYTHM_TOLERANCE
   });
 
   // Аудио и частицы — независимые регуляторы в реальном времени
@@ -53,8 +54,8 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
         <span className="tog">▾</span>
       </div>
 
-      <div className="proun-panel-section">Мир</div>
-      <div className="proun-seed-row" style={{ marginBottom: '4px' }}>
+      <div className="proun-panel-section">Мир &amp; Джойстик</div>
+      <div className="proun-seed-row" style={{ marginBottom: '8px' }}>
         <input
           type="number"
           value={seed}
@@ -62,6 +63,24 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
         />
         <button className="proun-btn" onClick={handleRegenerate}>Обновить</button>
         <button className="proun-btn" onClick={handleRandomSeed}>Случайно</button>
+      </div>
+      <div style={{ marginBottom: '12px' }}>
+        <a
+          href="/controller-settings"
+          style={{
+            display: 'block',
+            textAlign: 'center',
+            background: '#BF3B2B',
+            color: '#FFF',
+            padding: '8px',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            fontSize: '12px'
+          }}
+        >
+          📱 Настройка Мобильного Джойстика
+        </a>
       </div>
 
       <div className="proun-panel-section">Звук</div>
@@ -81,8 +100,8 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
           onChange={(e) => handlePlrVol(parseInt(e.target.value, 10))} />
       </div>
       <div className="proun-ctl thumb-ochre">
-        <label>Частицы <b>{particles}</b></label>
-        <input type="range" min={0} max={100} value={particles}
+        <label>Плотность частиц <b>{particles}%</b></label>
+        <input type="range" min={20} max={300} value={particles}
           onChange={(e) => handleParticles(parseInt(e.target.value, 10))} />
       </div>
 

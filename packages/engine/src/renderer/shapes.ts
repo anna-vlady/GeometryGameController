@@ -46,30 +46,103 @@ export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string
 }
 
 export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean) {
+  const l = el.len || 30, w = el.wid || 10;
   switch (el.kind) {
     case 'plane':
     case 'bar':
-      if (fill) ctx.fillRect(-el.len / 2, -el.wid / 2, el.len, el.wid);
-      else ctx.strokeRect(-el.len / 2, -el.wid / 2, el.len, el.wid);
+      if (fill) ctx.fillRect(-l / 2, -w / 2, l, w);
+      else ctx.strokeRect(-l / 2, -w / 2, l, w);
       break;
     case 'disc': {
-      const r = el.len / 2;
+      const r = l / 2;
       ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
       if (fill) ctx.fill(); else { ctx.lineWidth = Math.max(2, r * 0.3); ctx.stroke(); }
       break;
     }
+    case 'ring-disc': {
+      const r = l / 2;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+      ctx.beginPath(); ctx.arc(0, 0, r * 0.5, 0, TAU);
+      ctx.lineWidth = Math.max(2, r * 0.25);
+      ctx.stroke();
+      if (fill) { ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, TAU); ctx.fill(); }
+      break;
+    }
     case 'wedge': {
-      const s = el.len / 2;
+      const s = l / 2;
       ctx.beginPath();
       ctx.moveTo(0, -s * 1.2); ctx.lineTo(s, s * 0.8); ctx.lineTo(-s, s * 0.8);
-      ctx.closePath(); ctx.fill();
+      ctx.closePath();
+      if (fill) ctx.fill(); else ctx.stroke();
       break;
     }
     case 'needle':
-      ctx.lineWidth = Math.max(1.5, el.wid);
-      ctx.beginPath(); ctx.moveTo(-el.len / 2, 0); ctx.lineTo(el.len / 2, 0); ctx.stroke();
-      ctx.beginPath(); ctx.arc(el.len / 2, 0, 2.4, 0, TAU); ctx.fill();
+      ctx.lineWidth = Math.max(1.5, w);
+      ctx.beginPath(); ctx.moveTo(-l / 2, 0); ctx.lineTo(l / 2, 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(l / 2, 0, 3, 0, TAU); ctx.fill();
       break;
+    case 'parallelogram': {
+      const skew = w * 0.7;
+      ctx.beginPath();
+      ctx.moveTo(-l / 2 + skew, -w / 2);
+      ctx.lineTo(l / 2 + skew, -w / 2);
+      ctx.lineTo(l / 2 - skew, w / 2);
+      ctx.lineTo(-l / 2 - skew, w / 2);
+      ctx.closePath();
+      if (fill) ctx.fill(); else ctx.stroke();
+      break;
+    }
+    case 'trapezoid': {
+      ctx.beginPath();
+      ctx.moveTo(-l * 0.3, -w / 2);
+      ctx.lineTo(l * 0.3, -w / 2);
+      ctx.lineTo(l / 2, w / 2);
+      ctx.lineTo(-l / 2, w / 2);
+      ctx.closePath();
+      if (fill) ctx.fill(); else ctx.stroke();
+      break;
+    }
+    case 'arc-segment': {
+      const r = l / 2;
+      ctx.lineWidth = Math.max(2, w);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, -Math.PI * 0.4, Math.PI * 0.65);
+      ctx.stroke();
+      break;
+    }
+    case 'striped-plane': {
+      if (fill) ctx.fillRect(-l / 2, -w / 2, l, w);
+      ctx.save();
+      ctx.lineWidth = 1;
+      const step = 6;
+      ctx.beginPath();
+      for (let x = -l / 2 + step; x < l / 2; x += step) {
+        ctx.moveTo(x, -w / 2); ctx.lineTo(x + w * 0.5, w / 2);
+      }
+      ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case 'grid-cross': {
+      ctx.lineWidth = Math.max(1.5, w * 0.3);
+      ctx.beginPath();
+      ctx.moveTo(-l / 2, 0); ctx.lineTo(l / 2, 0);
+      ctx.moveTo(0, -l * 0.35); ctx.lineTo(0, l * 0.35);
+      ctx.stroke();
+      // Ticks
+      for (let x = -l / 2 + 10; x <= l / 2 - 10; x += 15) {
+        ctx.beginPath(); ctx.moveTo(x, -4); ctx.lineTo(x, 4); ctx.stroke();
+      }
+      break;
+    }
+    case 'frame-box': {
+      ctx.lineWidth = Math.max(1.5, w * 0.25);
+      ctx.strokeRect(-l / 2, -w / 2, l, w);
+      ctx.beginPath();
+      ctx.moveTo(-l / 2, -w / 2); ctx.lineTo(l / 2, w / 2);
+      ctx.stroke();
+      break;
+    }
   }
 }
 

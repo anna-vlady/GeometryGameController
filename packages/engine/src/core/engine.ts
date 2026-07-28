@@ -6,8 +6,8 @@ import { updateEngine } from '../physics/update';
 import { AudioManager } from '../audio/audioManager';
 import { modeFreq } from '../audio/utils';
 import { Renderer } from '../renderer/renderer';
-import { Mech, Voice } from '../world/types';
-import { MAXTANK, SPAWN } from '../physics/constants';
+import { Mech, Voice, PlayerSlot } from '../world/types';
+import { MAXTANK, SPAWN, SINGLE_BOOST_DUR, RHYTHM_BOOST_DUR, RHYTHM_TOLERANCE } from '../physics/constants';
 import { OCT } from '../world/constants';
 
 export interface EngineConfig {
@@ -16,6 +16,50 @@ export interface EngineConfig {
 }
 
 const TAU = Math.PI * 2;
+
+import { Shockwave, NetPlayer } from '../world/types';
+
+declare global {
+  interface Window {
+    __PROUN_DEBUG__?: {
+      fps: number;
+      loopCount: number;
+      errorCount: number;
+      lastError: string | null;
+      audioState: string;
+      playerPos: { x: number; y: number };
+      logs: string[];
+      log: (msg: string) => void;
+    };
+  }
+}
+
+if (typeof window !== 'undefined' && !window.__PROUN_DEBUG__) {
+  window.__PROUN_DEBUG__ = {
+    fps: 0,
+    loopCount: 0,
+    errorCount: 0,
+    lastError: null,
+    audioState: 'unknown',
+    playerPos: { x: 0, y: 0 },
+    logs: [],
+    log: (msg: string) => {
+      const dbg = window.__PROUN_DEBUG__;
+      if (dbg) {
+        dbg.logs.push(`[${new Date().toISOString().substring(11, 19)}] ${msg}`);
+        if (dbg.logs.length > 50) dbg.logs.shift();
+      }
+    }
+  };
+
+  window.addEventListener('error', (e) => {
+    if (window.__PROUN_DEBUG__) {
+      window.__PROUN_DEBUG__.errorCount++;
+      window.__PROUN_DEBUG__.lastError = `${e.message} at ${e.filename}:${e.lineno}`;
+      window.__PROUN_DEBUG__.log(`UNCAUGHT ERROR: ${e.message}`);
+    }
+  });
+}
 
 export class ProunEngine {
   canvas: HTMLCanvasElement;
@@ -40,13 +84,56 @@ export class ProunEngine {
   evCd = 0;
   keys = new Set<string>();
 
+  shockwaves: Shockwave[] = [];
+  netPlayers: NetPlayer[] = [];
+  tapHistory: Array<{ key: string; time: number }> = [];
+  comboFeedback = '';
+  comboFlash = 0;
+  coopTandem = false;
+  coopBeam = false;
+  slots: PlayerSlot[] = [];
+  roomPin = 'SLOT-1';
+  controllerConnected = false;
+
   constructor(config: EngineConfig) {
     this.canvas = config.canvas;
     const seed = config.seed || WORLD_SEED;
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has('player')) {
+        const p = parseInt(params.get('player') || '1', 10);
+        this.roomPin = `SLOT-${Math.max(1, Math.min(4, p))}`;
+      } else if (params.has('slot')) {
+        const s = parseInt(params.get('slot') || '1', 10);
+        this.roomPin = `SLOT-${Math.max(1, Math.min(4, s))}`;
+      } else if (params.has('room')) {
+        this.roomPin = (params.get('room') || 'SLOT-1').toUpperCase();
+      }
+    }
+
+    const slotColors = ['#BF3B2B', '#1E1B16', '#C99B3F', '#3F5666'];
+    this.slots = [1, 2, 3, 4].map(num => ({
+      slotId: `SLOT-${num}`,
+      num,
+      name: `Игрок ${num}`,
+      color: slotColors[num - 1],
+      active: num === 1,
+      connected: false,
+      player: createPlayer(),
+      tanks: [0, 0, 0, 0],
+      collectFlash: [0, 0, 0, 0],
+      remoteStick: { x: 0, y: 0 },
+      boostTimer: 0,
+      magnetTimer: 0
+    }));
+
     this.world = new WorldGenerator(seed);
     this.audio = new AudioManager();
     this.renderer = new Renderer(this.canvas);
-    this.player = createPlayer();
+    this.player = this.slots[0].player;
+    this.tanks = this.slots[0].tanks;
+    this.collectFlash = this.slots[0].collectFlash;
     this.fx = { strobe: 0, distort: 0, stutter: 0, shocks: [] };
 
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -54,12 +141,107 @@ export class ProunEngine {
     this.handlePointerDown = this.handlePointerDown.bind(this);
   }
 
+  activateSlot(slotId: string) {
+    const s = this.slots.find(x => x.slotId.toUpperCase() === slotId.toUpperCase());
+    if (s) {
+      if (!s.active) {
+        s.active = true;
+        s.player.x = this.slots[0].player.x + (s.num - 1) * 45;
+        s.player.y = this.slots[0].player.y;
+      }
+      s.connected = true;
+    }
+  }
+
   handleKeyDown(e: KeyboardEvent) {
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) e.preventDefault();
     if (e.code === 'KeyM') this.audio.toggleMute();
     if (e.code === 'KeyR') this.restart();
+
+    if (e.code === 'KeyJ' || e.code === 'KeyK') {
+      this.onRhythmTap(e.code);
+    }
+
     this.keys.add(e.code);
     this.start();
+  }
+
+  onRhythmTap(key: string, slotId?: string) {
+    const now = performance.now();
+    const targetSlot = this.slots.find(s => s.slotId.toUpperCase() === (slotId || this.roomPin).toUpperCase()) || this.slots[0];
+
+    this.tapHistory.push({ key, time: now });
+    if (this.tapHistory.length > 8) this.tapHistory.shift();
+
+    // 1. Single-tap action effects
+    if (key === 'KeyJ') {
+      this.audio.playPata();
+      this.fx.shocks.push({ x: targetSlot.player.x, y: targetSlot.player.y, r: 15, v: 320, life: 0.35 });
+      this.comboFeedback = 'PATA!';
+      this.comboFlash = 0.5;
+      targetSlot.collectFlash[0] = 1;
+    } else if (key === 'KeyK') {
+      this.audio.playPon();
+      this.fx.shocks.push({ x: targetSlot.player.x, y: targetSlot.player.y, r: 25, v: 450, life: 0.45 });
+      this.comboFeedback = 'PON!';
+      this.comboFlash = 0.5;
+      // Single button B (PON) triggers short boost (0.6–0.8s)
+      targetSlot.boostTimer = SINGLE_BOOST_DUR;
+    }
+
+    const n = this.tapHistory.length;
+    if (n >= 4) {
+      const h = this.tapHistory.slice(n - 4);
+      const k0 = h[0].key, k1 = h[1].key, k2 = h[2].key, k3 = h[3].key;
+
+      const iti1 = h[1].time - h[0].time;
+      const iti2 = h[2].time - h[1].time;
+      const iti3 = h[3].time - h[2].time;
+
+      if (iti1 >= 100 && iti1 <= 1400) {
+        const err1 = Math.abs(iti1 - iti2) / iti1;
+        const err2 = Math.abs(iti2 - iti3) / iti2;
+
+        if (err1 <= RHYTHM_TOLERANCE && err2 <= RHYTHM_TOLERANCE) {
+          // Pattern A: PATA - PATA - PATA - PON (Sprint 1.5–1.7s)
+          if (k0 === 'KeyJ' && k1 === 'KeyJ' && k2 === 'KeyJ' && k3 === 'KeyK') {
+            this.audio.playComboFanfare();
+            targetSlot.boostTimer = RHYTHM_BOOST_DUR;
+
+            [30, 60, 90].forEach((r0, idx) => {
+              this.shockwaves.push({
+                x: targetSlot.player.x, y: targetSlot.player.y,
+                r: r0, maxR: 900, speed: 750 + idx * 80, power: 120, life: 1.8
+              });
+            });
+
+            this.comboFeedback = '🔥 PATA PATA PATA PON — РЫВОК 1.6с! 🔥';
+            this.comboFlash = 2.2;
+            this.fx.strobe = 0.55;
+            this.fx.distort = 0.35;
+            this.tapHistory = [];
+          }
+          // Pattern B: PON - PON - PATA - PATA (Magnetism x2.7)
+          else if (k0 === 'KeyK' && k1 === 'KeyK' && k2 === 'KeyJ' && k3 === 'KeyJ') {
+            this.audio.playComboFanfare();
+            targetSlot.magnetTimer = 3.5;
+
+            [40, 80, 120].forEach((r0, idx) => {
+              this.shockwaves.push({
+                x: targetSlot.player.x, y: targetSlot.player.y,
+                r: r0, maxR: 1200, speed: 650 + idx * 70, power: 150, life: 2.2
+              });
+            });
+
+            this.comboFeedback = '⚡ PON PON PATA PATA — МАГНЕТИЗМ ×2.7! ⚡';
+            this.comboFlash = 2.5;
+            this.fx.strobe = 0.65;
+            this.fx.distort = 0.40;
+            this.tapHistory = [];
+          }
+        }
+      }
+    }
   }
 
   handleKeyUp(e: KeyboardEvent) {
@@ -67,6 +249,7 @@ export class ProunEngine {
   }
 
   handlePointerDown() {
+    this.audio.resume();
     this.start();
   }
 
@@ -84,6 +267,7 @@ export class ProunEngine {
   }
 
   start() {
+    this.audio.resume();
     if (!this.started) {
       this.started = true;
       this.audio.init();
@@ -94,11 +278,14 @@ export class ProunEngine {
   }
 
   restart() {
-    this.player.x = SPAWN.x; this.player.y = SPAWN.y;
-    this.player.vx = 0; this.player.vy = 0;
-    for (let i = 0; i < 4; i++) {
-      this.tanks[i] = 0; this.collectFlash[i] = 0;
-      this.player.orbs[i].trail.length = 0;
+    for (const slot of this.slots) {
+      slot.player.x = SPAWN.x + (slot.num - 1) * 45;
+      slot.player.y = SPAWN.y;
+      slot.player.vx = 0; slot.player.vy = 0;
+      for (let i = 0; i < 4; i++) {
+        slot.tanks[i] = 0; slot.collectFlash[i] = 0;
+        slot.player.orbs[i].trail.length = 0;
+      }
     }
     this.dominant = null;
     this.won = false;
@@ -119,26 +306,46 @@ export class ProunEngine {
     if (!this.started) return;
     requestAnimationFrame(this.loop.bind(this));
 
-    const dt = Math.min((now - this.lastT) / 1000, 0.05);
-    this.lastT = now;
+    const dbg = typeof window !== 'undefined' ? window.__PROUN_DEBUG__ : undefined;
 
-    if (this.fx.stutter > 0) {
-      this.fx.stutter -= dt;
+    try {
+      const dt = Math.min((now - (this.lastT || now)) / 1000, 0.05);
+      this.lastT = now;
+
+      if (dbg) {
+        dbg.loopCount++;
+        dbg.fps = Math.round(1 / Math.max(dt, 0.001));
+        dbg.audioState = this.audio.ac ? this.audio.ac.state : 'none';
+        dbg.playerPos = { x: Math.round(this.player.x), y: Math.round(this.player.y) };
+      }
+
+      if (this.fx.stutter > 0) {
+        this.fx.stutter -= dt;
+        this.renderer.draw(
+          now / 1000, this.audio.clockNow(), this.player, this.fx,
+          this.world.chunks, this.world.farChunks, this.dominant,
+          this.tanks, this.collectFlash, this.world.seed, this.particleFrac,
+          this.shockwaves, this.netPlayers, this.slots
+        );
+        return;
+      }
+
+      updateEngine(this, dt);
+
       this.renderer.draw(
         now / 1000, this.audio.clockNow(), this.player, this.fx,
         this.world.chunks, this.world.farChunks, this.dominant,
-        this.tanks, this.collectFlash, this.world.seed, this.particleFrac
+        this.tanks, this.collectFlash, this.world.seed, this.particleFrac,
+        this.shockwaves, this.netPlayers, this.slots
       );
-      return;
+    } catch (err: any) {
+      console.error('[PROUN ENGINE RUNTIME ERROR]', err);
+      if (dbg) {
+        dbg.errorCount++;
+        dbg.lastError = err?.stack || String(err);
+        dbg.log(`LOOP ERROR: ${err?.message || err}`);
+      }
     }
-
-    updateEngine(this, dt);
-
-    this.renderer.draw(
-      now / 1000, this.audio.clockNow(), this.player, this.fx,
-      this.world.chunks, this.world.farChunks, this.dominant,
-      this.tanks, this.collectFlash, this.world.seed, this.particleFrac
-    );
   }
 
   fxShock(x: number, y: number, r0: number) {

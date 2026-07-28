@@ -19,8 +19,13 @@ export function useEngine(canvasRef: React.RefObject<HTMLCanvasElement | null>) 
     forceRender(x => x + 1);
 
     const onResize = () => {
-      engine.renderer.resize(window.innerWidth, window.innerHeight);
+      if (canvasRef.current && engineRef.current) {
+        const w = canvasRef.current.clientWidth || window.innerWidth;
+        const h = canvasRef.current.clientHeight || window.innerHeight;
+        engineRef.current.renderer.resize(w, h);
+      }
     };
+    onResize();
     window.addEventListener('resize', onResize);
 
     return () => {

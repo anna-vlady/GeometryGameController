@@ -1,25 +1,52 @@
 import { useEffect, useRef, useState } from 'react';
-import { ProunEngine, SPAWN } from '@proun/engine';
+import { ProunEngine, SPAWN, ALTITUDE_MAX } from '@proun/engine';
 
 interface HUDProps {
   engine: ProunEngine | null;
 }
 
 export function HUD({ engine }: HUDProps) {
-  const [tanks, setTanks] = useState([0, 0, 0, 0]);
   const [altitude, setAltitude] = useState(0);
   const [won, setWon] = useState(false);
   const [climbSecs, setClimbSecs] = useState(0);
+  const [peerPilot, setPeerPilot] = useState<{ name: string; distM: number; angleDeg: number } | null>(null);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
     if (!engine) return;
 
     const tick = () => {
-      setTanks([...engine.tanks]);
       setAltitude(Math.round(Math.max(0, (SPAWN.y - engine.player.y) / 10)));
       setWon(engine.won);
       if (engine.won) setClimbSecs(Math.round(engine.climbSeconds()));
+
+      if (engine.netPlayers && engine.netPlayers.length > 0) {
+        let bestDist = Infinity;
+        let bestNp: any = null;
+        for (const np of engine.netPlayers) {
+          if (!np || typeof np.x !== 'number' || typeof np.y !== 'number' || isNaN(np.x) || isNaN(np.y)) continue;
+          const dx = np.x - engine.player.x;
+          const dy = np.y - engine.player.y;
+          const d = Math.hypot(dx, dy);
+          if (d < bestDist) {
+            bestDist = d;
+            bestNp = { ...np, dx, dy, dist: d };
+          }
+        }
+        if (bestNp) {
+          const angleDeg = Math.round((Math.atan2(bestNp.dy, bestNp.dx) * 180 / Math.PI + 360) % 360);
+          setPeerPilot({
+            name: bestNp.name || bestNp.id,
+            distM: Math.round(bestNp.dist / 10),
+            angleDeg
+          });
+        } else {
+          setPeerPilot(null);
+        }
+      } else {
+        setPeerPilot(null);
+      }
+
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -31,38 +58,184 @@ export function HUD({ engine }: HUDProps) {
 
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-      {/* Tanks */}
-      <div style={{ position: 'absolute', bottom: '26px', left: '26px', display: 'flex', gap: '20px' }}>
-        {tanks.map((fill, i) => (
-          <div key={i} style={{ width: '10px', height: '56px', border: '1px solid rgba(30,27,22,0.45)', position: 'relative' }}>
-            <div style={{
-              position: 'absolute', bottom: 1, left: 1, right: 1,
-              height: `${(fill / 12) * 100}%`,
-              backgroundColor: ['#BF3B2B', '#1E1B16', '#C99B3F', '#3F5666'][i]
+      {/* Connected Controllers Badges (SLOT 1–4) */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        left: '26px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        pointerEvents: 'auto'
+      }}>
+        {engine.slots && engine.slots.map(s => (
+          <div key={s.slotId} style={{
+            background: s.active ? 'rgba(30,27,22,0.88)' : 'rgba(30,27,22,0.35)',
+            color: '#E7DFCC',
+            padding: '5px 12px',
+            borderRadius: '16px',
+            fontSize: '11px',
+            fontWeight: '900',
+            letterSpacing: '1px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            opacity: s.active ? 1 : 0.6
+          }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              backgroundColor: s.connected ? '#4CAF50' : s.color
             }} />
+            <span>{s.name}</span>
           </div>
         ))}
       </div>
 
-      {/* Altitude */}
-      <div style={{ position: 'absolute', bottom: '70px', right: '30px', color: 'rgba(30,27,22,0.6)', textAlign: 'right' }}>
-        <p>{altitude} М</p>
+      {/* Tanks for all active local players */}
+      <div style={{ position: 'absolute', bottom: '26px', left: '26px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {engine.slots && engine.slots.filter(s => s.active).map(s => (
+          <div key={s.slotId} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '900', color: s.color, width: '56px', letterSpacing: '1px' }}>
+              {s.name}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {s.tanks.map((fill, i) => (
+                <div key={i} style={{ width: '8px', height: '36px', border: `1px solid ${s.color}`, position: 'relative', borderRadius: '1px' }}>
+                  <div style={{
+                    position: 'absolute', bottom: 1, left: 1, right: 1,
+                    height: `${(fill / 12) * 100}%`,
+                    backgroundColor: ['#BF3B2B', '#1E1B16', '#C99B3F', '#3F5666'][i]
+                  }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Peer Pilot Co-op Compass */}
+      {peerPilot && (
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(30,27,22,0.88)',
+          color: '#E7DFCC',
+          padding: '6px 16px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: 'bold',
+          letterSpacing: '1px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+        }}>
+          <span style={{ color: '#BF3B2B' }}>🤝</span>
+          <span>{peerPilot.name}</span>
+          <span style={{ color: '#C99B3F' }}>({peerPilot.distM} м)</span>
+          <span style={{
+            display: 'inline-block',
+            transform: `rotate(${peerPilot.angleDeg}deg)`,
+            fontSize: '14px',
+            color: '#BF3B2B'
+          }}>➔</span>
+        </div>
+      )}
+
+      {/* Rhythm Combo Feedback (Corner Placement - Top Left) */}
+      {engine.comboFlash > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '70px',
+          left: '26px',
+          color: engine.comboFeedback.includes('PON') ? '#C99B3F' : '#BF3B2B',
+          fontSize: engine.comboFeedback.includes('REZONANCE') ? '16px' : '20px',
+          fontWeight: '900',
+          letterSpacing: '2px',
+          padding: '6px 14px',
+          background: 'rgba(242,235,217,0.92)',
+          border: '2px solid ' + (engine.comboFeedback.includes('PON') ? '#C99B3F' : '#BF3B2B'),
+          borderRadius: '6px',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+          transition: 'all 0.1s ease-out',
+          textAlign: 'left'
+        }}>
+          {engine.comboFeedback}
+        </div>
+      )}
+
+      {/* Vertical Altimeter Scale (Высотомер) */}
+      <div style={{
+        position: 'absolute',
+        top: '80px',
+        bottom: '80px',
+        right: '24px',
+        width: '28px',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        pointerEvents: 'none'
+      }}>
+        {/* Top Label (Summit) */}
+        <div style={{ fontSize: '10px', fontWeight: '900', color: '#BF3B2B', letterSpacing: '1px' }}>
+          {ALTITUDE_MAX}m
+        </div>
+
+        {/* Vertical Scale Bar Track */}
+        <div style={{
+          flex: 1,
+          width: '6px',
+          background: 'rgba(30,27,22,0.15)',
+          borderRadius: '3px',
+          position: 'relative',
+          margin: '8px 0',
+          border: '1px solid rgba(30,27,22,0.3)'
+        }}>
+          {/* Player Height Marker */}
+          <div style={{
+            position: 'absolute',
+            left: '-6px',
+            right: '-6px',
+            height: '8px',
+            background: '#BF3B2B',
+            borderRadius: '2px',
+            bottom: `${Math.min(100, Math.max(0, (altitude / ALTITUDE_MAX) * 100))}%`,
+            transform: 'translateY(50%)',
+            boxShadow: '0 2px 6px rgba(191,59,43,0.5)'
+          }} />
+        </div>
+
+        {/* Bottom Label (Start) & Altitude Readout */}
+        <div style={{ fontSize: '10px', fontWeight: 'bold', color: 'rgba(30,27,22,0.7)', textAlign: 'center' }}>
+          <div>{altitude}m</div>
+          <div style={{ fontSize: '9px', opacity: 0.7 }}>0m</div>
+        </div>
       </div>
 
       {/* Hint */}
       <div className="proun-hud-hint">
-        WASD — тяга · M — звук · R — заново
+        WASD — тяга · J-K — ритм Patapon (J-J-J-K) · M — звук · R — заново
       </div>
 
       {/* Финал: вершина */}
       {won && (
         <div className="proun-overlay" style={{ pointerEvents: 'auto', cursor: 'default' }}>
-          <h1>ВЕР<span className="red">ШИНА</span></h1>
-          <div className="sub" style={{ marginBottom: 0 }}>
-            время восхождения — {Math.floor(climbSecs / 60)}:{String(climbSecs % 60).padStart(2, '0')}
+          <h1>РИТУАЛ<span className="red"> ВОСХОЖДЕНИЯ</span></h1>
+          <div className="sub" style={{ marginBottom: 0 }}>ЗАВЕРШЁН</div>
+          <div className="sub" style={{ marginTop: '12px' }}>
+            время подъёма — {Math.floor(climbSecs / 60)}:{String(climbSecs % 60).padStart(2, '0')}
+          </div>
+          <div className="sub" style={{ marginTop: '6px', fontSize: '14px', opacity: 0.7 }}>
+            высота — {ALTITUDE_MAX} м · вершина горы Арарат
           </div>
           <div className="start" style={{ marginTop: '20px' }}>
-            R — снова · полёт продолжается
+            R — начать восхождение заново
           </div>
         </div>
       )}

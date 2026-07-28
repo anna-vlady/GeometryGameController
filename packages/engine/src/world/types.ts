@@ -80,7 +80,51 @@ export interface Mech {
   orbitR: number;
   R: number;
   outerR: number;
+  subKind?: string;
+  swirlBoost?: number;
+  swirlTimer?: number;
   partN?: number;
+}
+
+export interface Shockwave {
+  x: number;
+  y: number;
+  r: number;
+  maxR: number;
+  speed: number;
+  power: number;
+  life: number;
+}
+
+export interface NetPlayer {
+  id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  targetX?: number;
+  targetY?: number;
+  targetVx?: number;
+  targetVy?: number;
+  tanks: number[];
+  name?: string;
+  orbs?: Array<{ ox: number; oy: number; energy: number }>;
+}
+
+export interface PlayerSlot {
+  slotId: string;
+  num: number;
+  name: string;
+  color: string;
+  active: boolean;
+  connected: boolean;
+  player: any;
+  tanks: number[];
+  collectFlash: number[];
+  remoteStick: { x: number; y: number };
+  boostTimer: number;
+  magnetTimer: number;
+  coopBlend?: number;
 }
 
 export interface Decor {

@@ -1,11 +1,39 @@
 import { DUR_POOL, OCT, RING_RATIO } from './constants';
-import { hash2, mulberry32, smoothstep } from '../core/utils';
+import { SPAWN, FLOOR_Y, SUMMIT_Y } from '../physics/constants';
+import { hash2, mulberry32 } from '../core/utils';
 import { Voice, Mech, Particle, Chunk, FarDecor, Decor } from './types';
 
 const CHUNK = 900;
 
+/**
+ * Макроформа горы Арарат:
+ *   0–1000 м:   широкое плотное подножие       (density ≈ 1.0)
+ *   1000–2500 м: постепенное сужение          (density ≈ 0.7–0.4)
+ *   2500–4000 м: крутой склон, разреженность   (density ≈ 0.35–0.15)
+ *   4000–5165 м: снежная вершина, единицы      (density ≈ 0.12–0.05)
+ *
+ * t = 0 на вершине (SUMMIT_Y), t = 1 у подножия (FLOOR_Y)
+ */
 export function densityAt(y: number): number {
-  return 0.14 + 0.86 * smoothstep(-2600, 2000, y);
+  const t = Math.max(0, Math.min(1, (y - SUMMIT_Y) / (FLOOR_Y - SUMMIT_Y)));
+
+  if (t < 0.22) {
+    // Снежная вершина — минимум объектов
+    const s = t / 0.22;
+    return 0.05 + 0.07 * s;
+  } else if (t < 0.52) {
+    // Крутой склон — объекты постепенно появляются
+    const s = (t - 0.22) / 0.30;
+    return 0.12 + 0.23 * s * s;
+  } else if (t < 0.80) {
+    // Среднегорье — увеличение плотности
+    const s = (t - 0.52) / 0.28;
+    return 0.35 + 0.40 * s;
+  } else {
+    // Широкое подножие — максимальная плотность объектов
+    const s = (t - 0.80) / 0.20;
+    return 0.75 + 0.25 * s;
+  }
 }
 
 function makeNRR(rnd: () => number, half: number): number[] {
@@ -50,7 +78,7 @@ export function ringPos(ring: Voice, T: number): number {
 export function spawnPart(o: Mech): Particle {
   const ring = o.rings[(Math.random() * o.rings.length) | 0];
   const a = Math.random() * Math.PI * 2;
-  const sp = 30 + Math.random() * 40;
+  const sp = 8 + Math.random() * 14;
   return {
     x: o.x + Math.cos(a) * (ring.r || 0),
     y: o.y + Math.sin(a) * (ring.r || 0),
@@ -82,13 +110,20 @@ function makeOrbital(o: Mech, rnd: () => number) {
 
 function makeProun(o: Mech, rnd: () => number) {
   o.archetype = 'proun';
+  const subKinds = [
+    'proun-1e', 'proun-93', 'proun-5a', 'proun-12e',
+    'proun-grid', 'proun-thrust', 'proun-concentric', 'proun-arc',
+    'proun-hatch', 'proun-wedge-bar', 'proun-trap', 'proun-frame'
+  ];
+  const subKind = subKinds[(rnd() * subKinds.length) | 0];
+  o.subKind = subKind;
+
   const axis = (rnd() < 0.5 ? -1 : 1) * (Math.PI * 0.16 + rnd() * Math.PI * 0.17);
   o.axis = axis;
   const ux = Math.cos(axis), uy = Math.sin(axis);
   const nx = -uy, ny = ux;
   const U = (24 + rnd() * 16) * o.scale;
   const side = rnd() < 0.5 ? 1 : -1;
-  const massDisc = rnd() < 0.32;
   let reach = o.coreSize;
 
   const el = (cfg: any) => {
@@ -96,37 +131,84 @@ function makeProun(o: Mech, rnd: () => number) {
     const u = cfg.u * U, w = cfg.v * U;
     v.bx = u * ux + w * nx;
     v.by = u * uy + w * ny;
-    v.kind = cfg.kind; v.instr = cfg.instr;
+    v.kind = cfg.kind; v.instr = cfg.instr || 'plane';
     v.len = cfg.len * U; v.wid = (cfg.wid || 0.14) * U;
     v.rot = cfg.rot != null ? cfg.rot : axis;
-    v.motion = cfg.motion; v.amp = (cfg.amp || 0) * U;
-    v.mfreq = cfg.mfreq; v.mphase = rnd() * Math.PI * 2;
-    v.depth = cfg.depth; v.col = cfg.col;
+    v.motion = cfg.motion || 'none'; v.amp = (cfg.amp || 0) * U;
+    v.mfreq = cfg.mfreq || 0.2; v.mphase = rnd() * Math.PI * 2;
+    v.depth = cfg.depth || 0.5; v.col = cfg.col || 0;
     v.dir = (rnd() < 0.5 ? -1 : 1) * o.spin;
     v.r = Math.hypot(v.bx, v.by) + (v.len || 0) * 0.35;
     reach = Math.max(reach, v.r);
     o.rings.push(v);
   };
 
-  if (massDisc)
-    el({ kind: 'disc', instr: 'plane', u: -1.6 * side, v: 0.4 * side, len: 2.3, wid: 2.3, motion: 'bob', amp: 0.34, mfreq: 0.14 + rnd() * 0.05, depth: 0.85, col: 0, pulseMul: 3, octShift: -1 });
-  else
-    el({ kind: 'plane', instr: 'plane', u: -1.8 * side, v: 0.5 * side, len: 2.6, wid: 1.05, rot: axis, motion: 'slide', amp: 0.5, mfreq: 0.16 + rnd() * 0.06, depth: 0.85, col: 0, pulseMul: 3, octShift: -1 });
+  switch (subKind) {
+    case 'proun-1e': // Central big disc + long needles + floating planes
+      el({ kind: 'ring-disc', instr: 'plane', u: 0, v: 0, len: 2.8, wid: 2.8, motion: 'bob', amp: 0.2, mfreq: 0.15, depth: 0.9, col: 0, pulseMul: 3, octShift: -1 });
+      el({ kind: 'needle', instr: 'needle', u: -1.8 * side, v: 0.2, len: 4.2, wid: 0.08, rot: axis + Math.PI * 0.15, motion: 'spin', amp: 0, mfreq: 0.1, depth: 0.4, col: 1, pulseMul: 1, octShift: 1 });
+      el({ kind: 'parallelogram', instr: 'bar', u: 1.4 * side, v: -0.6 * side, len: 2.2, wid: 0.8, rot: axis - Math.PI * 0.2, motion: 'slide', amp: 0.4, mfreq: 0.2, depth: 0.6, col: 0, pulseMul: 2, octShift: 0 });
+      break;
 
-  el({ kind: 'bar', instr: 'bar', u: 0.1, v: -0.3 * side, len: 3.6, wid: 0.16, rot: axis + (rnd() < 0.5 ? 1 : -1) * Math.PI * 0.42, motion: 'seesaw', amp: 0.11, mfreq: 0.42 + rnd() * 0.12, depth: 0.4, col: 1, pulseMul: 1, octShift: 0 });
+    case 'proun-93': // Diagonal main truss + angled wedges & striped planes
+      el({ kind: 'bar', instr: 'bar', u: 0, v: 0, len: 4.8, wid: 0.2, rot: axis, motion: 'seesaw', amp: 0.08, mfreq: 0.1, depth: 0.3, col: 1, pulseMul: 1, octShift: -1 });
+      el({ kind: 'striped-plane', instr: 'plane', u: -1.2 * side, v: 0.6 * side, len: 2.4, wid: 1.1, rot: axis + Math.PI * 0.25, motion: 'slide', amp: 0.5, mfreq: 0.2, depth: 0.8, col: 0, pulseMul: 2, octShift: 0 });
+      el({ kind: 'wedge', instr: 'wedge', u: 1.8 * side, v: -0.4 * side, len: 1.2, wid: 1.2, rot: axis + Math.PI * 0.5, motion: 'drift', amp: 0.3, mfreq: 0.3, depth: 0.9, col: 0, pulseMul: 1.5, octShift: 1 });
+      break;
 
-  if (rnd() < 0.38)
-    el({ kind: 'bar', instr: 'bar', u: -0.5, v: 0.7 * side, len: 2.7, wid: 0.13, rot: axis + (rnd() < 0.5 ? 1 : -1) * Math.PI * 0.64, motion: 'seesaw', amp: 0.08, mfreq: 0.5 + rnd() * 0.2, depth: 0.55, col: 0, pulseMul: 1.5, octShift: 1 });
+    case 'proun-5a': // Light grid cross + floating frame box + dots
+      el({ kind: 'grid-cross', instr: 'needle', u: 0, v: 0, len: 3.6, wid: 0.25, rot: axis, motion: 'none', amp: 0, mfreq: 0, depth: 0.2, col: 1, pulseMul: 1, octShift: 0 });
+      el({ kind: 'frame-box', instr: 'bar', u: 1.1 * side, v: 0.8 * side, len: 2.1, wid: 1.4, rot: axis + Math.PI * 0.1, motion: 'bob', amp: 0.3, mfreq: 0.25, depth: 0.5, col: 0, pulseMul: 2, octShift: 1 });
+      el({ kind: 'disc', instr: 'disc', u: -1.5 * side, v: -0.9 * side, len: 0.8, wid: 0.8, motion: 'bob', amp: 0.4, mfreq: 0.3, depth: 0.7, col: 0, pulseMul: 1.5, octShift: 2 });
+      break;
 
-  el({ kind: 'disc', instr: 'disc', u: 1.7 * side, v: -1.1 * side, len: 1.0, wid: 1.0, motion: 'bob', amp: 0.42, mfreq: 0.30 + rnd() * 0.1, depth: 0.6, col: 0, pulseMul: 2, octShift: 1 });
+    case 'proun-12e': // Dynamic wedge arrow + curved arc segments
+      el({ kind: 'wedge', instr: 'wedge', u: 0, v: -0.5 * side, len: 2.5, wid: 2.5, rot: axis, motion: 'slide', amp: 0.6, mfreq: 0.25, depth: 0.95, col: 0, pulseMul: 3, octShift: -1 });
+      el({ kind: 'arc-segment', instr: 'disc', u: 0.5 * side, v: 0.9 * side, len: 3.2, wid: 0.2, rot: axis + Math.PI * 0.3, motion: 'spin', amp: 0, mfreq: 0.12, depth: 0.5, col: 1, pulseMul: 1.5, octShift: 0 });
+      el({ kind: 'needle', instr: 'needle', u: -1.3 * side, v: -0.8 * side, len: 2.0, wid: 0.06, rot: axis - Math.PI * 0.4, motion: 'drift', amp: 0.2, mfreq: 0.3, depth: 0.3, col: 0, pulseMul: 1, octShift: 1 });
+      break;
 
-  el({ kind: 'wedge', instr: 'wedge', u: 2.6 * side, v: 0.5 * side, len: 0.95, wid: 0.95, rot: axis + Math.PI * 0.5, motion: 'drift', amp: 0.2, mfreq: 0.5 + rnd() * 0.2, depth: 0.95, col: 0, pulseMul: 1.5, octShift: 1 });
+    case 'proun-grid': // Dual intersecting grids with small accent discs
+      el({ kind: 'grid-cross', instr: 'needle', u: -0.8 * side, v: 0.2, len: 4.0, wid: 0.3, rot: axis, motion: 'seesaw', amp: 0.05, mfreq: 0.18, depth: 0.3, col: 1, pulseMul: 1, octShift: 0 });
+      el({ kind: 'trapezoid', instr: 'plane', u: 1.2 * side, v: -0.7 * side, len: 1.9, wid: 1.0, rot: axis + Math.PI * 0.2, motion: 'slide', amp: 0.3, mfreq: 0.22, depth: 0.8, col: 0, pulseMul: 2, octShift: 1 });
+      break;
 
-  if (rnd() < 0.6)
-    el({ kind: 'disc', instr: 'disc', u: 0.4 * side, v: 1.5 * side, len: 0.55, wid: 0.55, motion: 'bob', amp: 0.5, mfreq: 0.55 + rnd() * 0.2, depth: 0.5, col: 1, pulseMul: 2, octShift: 2 });
+    case 'proun-thrust': // Slanted parallelograms creating 3D thrust feel
+      el({ kind: 'parallelogram', instr: 'plane', u: -1.2 * side, v: 0.3 * side, len: 3.1, wid: 1.2, rot: axis, motion: 'slide', amp: 0.7, mfreq: 0.2, depth: 0.85, col: 0, pulseMul: 3, octShift: -1 });
+      el({ kind: 'bar', instr: 'bar', u: 1.5 * side, v: -0.8 * side, len: 2.8, wid: 0.15, rot: axis + Math.PI * 0.5, motion: 'seesaw', amp: 0.12, mfreq: 0.35, depth: 0.4, col: 1, pulseMul: 1.5, octShift: 0 });
+      break;
 
-  if (rnd() < 0.5)
-    el({ kind: 'needle', instr: 'needle', u: -0.4, v: -0.9 * side, len: 1.3, wid: 0.05, rot: axis + Math.PI * 0.5 * (rnd() < 0.5 ? 1 : -1), motion: 'spin', amp: 0, mfreq: 0.2 + rnd() * 0.2, depth: 0.3, col: 1, pulseMul: 1, octShift: 2 });
+    case 'proun-concentric': // Nested ring-discs and bars
+      el({ kind: 'ring-disc', instr: 'disc', u: -0.5 * side, v: 0, len: 2.6, wid: 2.6, motion: 'bob', amp: 0.25, mfreq: 0.15, depth: 0.9, col: 0, pulseMul: 2, octShift: -1 });
+      el({ kind: 'disc', instr: 'disc', u: 1.6 * side, v: -0.8 * side, len: 1.1, wid: 1.1, motion: 'bob', amp: 0.4, mfreq: 0.28, depth: 0.7, col: 1, pulseMul: 1.5, octShift: 1 });
+      break;
+
+    case 'proun-arc': // Big sweeping arc-segment with wedge indicator
+      el({ kind: 'arc-segment', instr: 'plane', u: 0, v: 0, len: 4.2, wid: 0.25, rot: axis, motion: 'spin', amp: 0, mfreq: 0.08, depth: 0.5, col: 1, pulseMul: 1, octShift: -1 });
+      el({ kind: 'wedge', instr: 'wedge', u: -1.5 * side, v: 0.6 * side, len: 1.4, wid: 1.4, rot: axis - Math.PI * 0.3, motion: 'drift', amp: 0.3, mfreq: 0.3, depth: 0.85, col: 0, pulseMul: 2, octShift: 0 });
+      break;
+
+    case 'proun-hatch': // Hatching striped plane with grid cross
+      el({ kind: 'striped-plane', instr: 'plane', u: 0.4 * side, v: -0.2 * side, len: 3.4, wid: 1.3, rot: axis, motion: 'slide', amp: 0.4, mfreq: 0.18, depth: 0.8, col: 0, pulseMul: 2.5, octShift: -1 });
+      el({ kind: 'grid-cross', instr: 'needle', u: -1.6 * side, v: 0.7 * side, len: 2.6, wid: 0.2, rot: axis + Math.PI * 0.4, motion: 'none', amp: 0, mfreq: 0, depth: 0.3, col: 1, pulseMul: 1, octShift: 1 });
+      break;
+
+    case 'proun-wedge-bar': // Multiple intersecting bars with sharp wedge head
+      el({ kind: 'wedge', instr: 'wedge', u: 1.9 * side, v: 0, len: 1.8, wid: 1.8, rot: axis + Math.PI * 0.5, motion: 'drift', amp: 0.4, mfreq: 0.25, depth: 0.9, col: 0, pulseMul: 2, octShift: 0 });
+      el({ kind: 'bar', instr: 'bar', u: -0.6 * side, v: -0.4 * side, len: 3.8, wid: 0.18, rot: axis, motion: 'seesaw', amp: 0.1, mfreq: 0.15, depth: 0.4, col: 1, pulseMul: 1, octShift: -1 });
+      break;
+
+    case 'proun-trap': // Large trapezoid with needle and small ring-disc
+      el({ kind: 'trapezoid', instr: 'plane', u: -0.8 * side, v: -0.3 * side, len: 2.9, wid: 1.5, rot: axis, motion: 'slide', amp: 0.5, mfreq: 0.2, depth: 0.85, col: 0, pulseMul: 2.5, octShift: -1 });
+      el({ kind: 'ring-disc', instr: 'disc', u: 1.4 * side, v: 0.8 * side, len: 1.2, wid: 1.2, motion: 'bob', amp: 0.35, mfreq: 0.25, depth: 0.6, col: 1, pulseMul: 1.5, octShift: 1 });
+      break;
+
+    case 'proun-frame': // Large structural frame-box with floating planes
+    default:
+      el({ kind: 'frame-box', instr: 'bar', u: 0, v: 0, len: 3.5, wid: 2.2, rot: axis, motion: 'bob', amp: 0.2, mfreq: 0.15, depth: 0.5, col: 1, pulseMul: 1, octShift: -1 });
+      el({ kind: 'plane', instr: 'plane', u: -1.4 * side, v: 0.8 * side, len: 2.0, wid: 0.9, rot: axis + Math.PI * 0.2, motion: 'slide', amp: 0.4, mfreq: 0.25, depth: 0.8, col: 0, pulseMul: 2, octShift: 0 });
+      break;
+  }
 
   if (rnd() < 0.75) {
     const fu = -0.6 * side * U, fv = -1.9 * side * U;
@@ -159,7 +241,7 @@ export function makeMech(rnd: () => number, x: number, y: number): Mech {
   if (rnd() < 0.45) makeProun(o, rnd); else makeOrbital(o, rnd);
   o.orbitR = o.outerR * 0.8;
   o.R = o.outerR + 170 + rnd() * 70;
-  o.partN = Math.min(22, Math.round((6 + rnd() * 8) * (0.7 + scale * 0.32)));
+  o.partN = Math.min(80, Math.round((24 + rnd() * 28) * (0.8 + scale * 0.5)));
   for (let p = 0; p < o.partN; p++) o.parts.push(spawnPart(o));
   return o;
 }
@@ -187,9 +269,11 @@ export class WorldGenerator {
     n = Math.min(n, 3);
     for (let i = 0; i < n; i++) {
       const qx = (i % 2) * 0.5, qy = ((i / 2) | 0) * 0.5;
-      c.mechs.push(makeMech(rnd,
-        cx * CHUNK + (qx + 0.08 + rnd() * 0.34) * CHUNK,
-        cy * CHUNK + (qy + 0.08 + rnd() * 0.34) * CHUNK));
+      const mx = cx * CHUNK + (qx + 0.08 + rnd() * 0.34) * CHUNK;
+      const my = cy * CHUNK + (qy + 0.08 + rnd() * 0.34) * CHUNK;
+      if (Math.hypot(mx - SPAWN.x, my - SPAWN.y) > 650) {
+        c.mechs.push(makeMech(rnd, mx, my));
+      }
     }
     const nd = Math.round((0.3 + rnd() * 1.8) * (0.35 + 0.65 * dens));
     for (let i = 0; i < nd; i++) {
