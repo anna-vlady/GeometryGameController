@@ -1065,11 +1065,11 @@ export class Renderer {
         ctx.restore();
       } else if (activeLevelConfig.id === 4) {
         ctx.fillStyle = slotColor;
-        ctx.font = '900 18px "Courier New", Consolas, monospace';
+        ctx.font = '900 16px "Courier New", Consolas, monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const asciiShips = ['<[▲]>', '/\\_/', '<===>', '/|0|\\'];
-        ctx.fillText(asciiShips[pType], 0, 0);
+        const asciiFishShips = ['><(((º>', '>°))))彡', '><>', '<°)))><'];
+        ctx.fillText(asciiFishShips[pType], 0, 0);
         ctx.restore();
       } else if (activeLevelConfig.id === 5) {
         ctx.fillStyle = slotColor;

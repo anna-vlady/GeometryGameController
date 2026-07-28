@@ -82,10 +82,10 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, i
   }
   if (levelId === 4) { // ASCII Fish Art Theme
     ctx.save();
-    ctx.font = `900 ${Math.round(s * 1.5)}px "Courier New", Consolas, monospace`;
+    ctx.font = `900 ${Math.round(s * 1.4)}px "Courier New", Consolas, monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const asciiFishGlyphs = ['><(((º>', '( (O) )', '\\~/~\\~/', '~[#]~'];
+    const asciiFishGlyphs = ['><(((º>', '(o.O.o)', '~(~)~', '\\_(o)_/'];
     ctx.fillText(asciiFishGlyphs[i % 4], 0, 0);
     ctx.restore();
     return;
@@ -358,11 +358,11 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
     ctx.textBaseline = 'middle';
     switch (el.kind) {
       case 'grid-cross':
-      case 'frame-box': {
+      case 'frame-box': { // ASCII Sea Kelp Forest
         const lines = [
           '~(~(~(~)||(~)~)~)',
           '(///) (\\\\\\) (///)',
-          '[=== ASCII KELP ===]'
+          '~(~(~(~)||(~)~)~)'
         ];
         lines.forEach((line, idx) => {
           ctx.fillText(line, 0, (idx - 1) * 14);
@@ -370,7 +370,7 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         ctx.restore();
         return;
       }
-      case 'disc': {
+      case 'disc': { // ASCII Pearl Clam Shell / Pufferfish
         const lines = [
           '  .---.  ',
           ' ./ * * \\. ',
@@ -385,14 +385,27 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         return;
       }
       case 'ring-disc': {
-        ctx.fillText('≈ ≈ ≈ (><>) ≈ ≈ ≈', 0, 0);
+        ctx.fillText('≈ ≈ ≈ (><(((º>) ≈ ≈ ≈', 0, 0);
+        ctx.restore();
+        return;
+      }
+      case 'wedge': {
+        const lines = [
+          '   /|   ',
+          '  / |   ',
+          ' /  |>==<',
+          '/___|   '
+        ];
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 0, (idx - 1.5) * 12);
+        });
         ctx.restore();
         return;
       }
       case 'plane':
       case 'bar':
       default: {
-        ctx.fillText('~~~~~[ASCII FISH]~~~~~', 0, 0);
+        ctx.fillText('><(((º>   ><>   ><(((º>', 0, 0);
         ctx.restore();
         return;
       }
