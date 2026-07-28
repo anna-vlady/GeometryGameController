@@ -829,8 +829,55 @@ export class Renderer {
       }
 
       const pType = (slot.num - 1) % 4;
-      switch (pType) {
-        case 0: // Player 1: Primary Energy Winged Disc Emblem
+      if (activeLevelConfig.id === 3) {
+        ctx.fillStyle = slotColor;
+        ctx.strokeStyle = this.ink;
+        ctx.lineWidth = 2;
+        switch (pType) {
+          case 0: // Sakura Blossom Ship
+            ctx.beginPath();
+            for (let p = 0; p < 5; p++) {
+              const a = p * (TAU / 5);
+              const px = Math.cos(a) * 16, py = Math.sin(a) * 16;
+              ctx.arc(px * 0.6, py * 0.6, 9, 0, TAU);
+            }
+            ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU);
+            ctx.fillStyle = '#FAF0E6'; ctx.fill();
+            break;
+          case 1: // Fern Leaf Ship
+            ctx.beginPath();
+            ctx.moveTo(18, 0); ctx.quadraticCurveTo(0, -18, -14, -10);
+            ctx.lineTo(-6, 0); ctx.lineTo(-14, 10); ctx.quadraticCurveTo(0, 18, 18, 0);
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(14, 0); ctx.stroke();
+            break;
+          case 2: // Sunflower Daisy Ship
+            ctx.beginPath();
+            for (let p = 0; p < 8; p++) {
+              const a = p * (TAU / 8);
+              const px = Math.cos(a) * 14, py = Math.sin(a) * 14;
+              ctx.arc(px * 0.6, py * 0.6, 6, 0, TAU);
+            }
+            ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU);
+            ctx.fillStyle = '#3B593E'; ctx.fill();
+            break;
+          case 3: // Water Lily Lotus Ship
+          default:
+            for (let p = 0; p < 3; p++) {
+              const a = p * (TAU / 3) - Math.PI / 2;
+              const px = Math.cos(a) * 10, py = Math.sin(a) * 10;
+              ctx.beginPath(); ctx.arc(px, py, 11, 0, TAU); ctx.fill(); ctx.stroke();
+            }
+            ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU);
+            ctx.fillStyle = '#FAF0E6'; ctx.fill();
+            break;
+        }
+        ctx.restore();
+      } else {
+        switch (pType) {
+          case 0: // Player 1: Primary Energy Winged Disc Emblem
           shadowAnd(ctx, () => {
             // Crosswing stabilizers
             ctx.fillStyle = this.ink;
@@ -891,8 +938,9 @@ export class Renderer {
             ctx.fillRect(-2, -8, 4, 16);
           });
           break;
+        }
+        ctx.restore();
       }
-      ctx.restore();
 
       // 3. High-Contrast Player Slot Badge (P1 / P2 / P3 / P4)
       ctx.save();
