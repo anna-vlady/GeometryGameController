@@ -1,6 +1,7 @@
 import { VoiceOptions } from './types';
 import { modeFreq } from './utils';
 import { DRIVE, OCT, ROOT, VOWELS, MODES } from '../world/constants';
+import { levelRegistry } from '../levels/levelRegistry';
 
 const curveCache: Record<string, Float32Array> = {};
 
@@ -219,7 +220,29 @@ export class AudioManager {
     const t0 = Math.max(when, this.ac.currentTime + 0.003);
     const t1 = t0 + dur;
 
-    const o1 = this.ac.createOscillator(); o1.type = 'sawtooth';
+    const activeLevel = levelRegistry.getActiveConfig();
+    const activeAudio = activeLevel?.audio;
+    const driveAmount = activeAudio?.drive ? activeAudio.drive[e % activeAudio.drive.length] : DRIVE[e];
+
+    let waveType: OscillatorType = 'sawtooth';
+    let reverbWet = 0.16;
+    let delayWet = send;
+
+    if (activeLevel.id === 2) { // Neon Night Club (Synthwave Pulse Bass & Arp Leads)
+      waveType = 'square';
+      reverbWet = 0.30;
+      delayWet = send * 1.3;
+    } else if (activeLevel.id === 3) { // Enchanted Pastel Forest (Organic Soft Woodchimes & Marimba)
+      waveType = e % 2 === 0 ? 'sine' : 'triangle';
+      reverbWet = 0.45; // Lush Forest Echo
+      delayWet = send * 0.8;
+    } else if (activeLevel.id === 4) { // ASCII Aquarium Tank (Submerged Underwater Liquid Chiptune)
+      waveType = e === 1 ? 'sine' : 'square';
+      reverbWet = 0.50; // Deep Ocean Reverb
+      delayWet = send * 1.6; // Liquid Delay Echo
+    }
+
+    const o1 = this.ac.createOscillator(); o1.type = waveType;
     o1.frequency.setValueAtTime(Math.max(f * 0.972, 20), t0);
     o1.frequency.exponentialRampToValueAtTime(f, t0 + Math.min(0.04, dur * 0.3));
     if (gliss) o1.frequency.exponentialRampToValueAtTime(Math.max(f * Math.pow(2, gliss / 12), 20), t1);
@@ -235,10 +258,10 @@ export class AudioManager {
       lfo.start(t0); lfo.stop(t1 + 0.1);
     }
 
-    const sh = this.ac.createWaveShaper(); sh.curve = driveCurve(DRIVE[e]) as any;
+    const sh = this.ac.createWaveShaper(); sh.curve = driveCurve(driveAmount) as any;
     const F = VOWELS[e];
-    const f1 = this.ac.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = 8;
-    const f2 = this.ac.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = 11;
+    const f1 = this.ac.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = activeLevel.id === 3 ? 4 : 8;
+    const f2 = this.ac.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = activeLevel.id === 3 ? 5 : 11;
     f1.frequency.setValueAtTime(F[0], t0);
     f1.frequency.exponentialRampToValueAtTime(F[0] * 1.35, t1);
     f2.frequency.setValueAtTime(F[1] * 1.12, t0);
@@ -254,8 +277,8 @@ export class AudioManager {
     sh.connect(f1); f1.connect(amp);
     sh.connect(g2); g2.connect(f2); f2.connect(amp);
     amp.connect(opt.out || this.sfxOut!);
-    if (send > 0.01) { const s = this.ac.createGain(); s.gain.value = send; amp.connect(s); s.connect(this.delayIn!); }
-    const rs = this.ac.createGain(); rs.gain.value = 0.16; amp.connect(rs); rs.connect(this.reverbIn!);
+    if (delayWet > 0.01) { const s = this.ac.createGain(); s.gain.value = delayWet; amp.connect(s); s.connect(this.delayIn!); }
+    const rs = this.ac.createGain(); rs.gain.value = reverbWet; amp.connect(rs); rs.connect(this.reverbIn!);
     o1.start(t0); o1.stop(t1 + 0.12);
   }
 
