@@ -403,17 +403,43 @@ export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
   if (levelId === 3) {
-    ctx.font = `${Math.max(14, d.size * 1.1)}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const s = Math.max(10, d.size * 0.7);
     switch (d.kind) {
-      case 'cross': ctx.fillText('🍃', 0, 0); break;
-      case 'arc': ctx.fillText('🌸', 0, 0); break;
-      case 'outline': ctx.fillText('🍀', 0, 0); break;
-      case 'dots':
+      case 'cross': { // Vector Leaf Frond
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.3);
+        ctx.quadraticCurveTo(s * 0.9, 0, 0, s * 1.3);
+        ctx.quadraticCurveTo(-s * 0.9, 0, 0, -s * 1.3);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(0, s); ctx.stroke();
+        break;
+      }
+      case 'arc': { // Vector 5-Petal Sakura Blossom
+        ctx.beginPath();
+        for (let p = 0; p < 5; p++) {
+          const a = p * (TAU / 5);
+          const px = Math.cos(a) * s * 0.75, py = Math.sin(a) * s * 0.75;
+          ctx.arc(px, py, s * 0.4, 0, TAU);
+        }
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, s * 0.3, 0, TAU); ctx.fill();
+        break;
+      }
+      case 'outline': { // Vector 3-Leaf Clover Shamrock
+        for (let p = 0; p < 3; p++) {
+          const a = p * (TAU / 3) - Math.PI / 2;
+          const px = Math.cos(a) * s * 0.6, py = Math.sin(a) * s * 0.6;
+          ctx.beginPath(); ctx.arc(px, py, s * 0.45, 0, TAU); ctx.fill(); ctx.stroke();
+        }
+        ctx.fillRect(-1.5, 0, 3, s * 1.1);
+        break;
+      }
+      case 'dots': { // Vector Dewdrop Cluster
         for (let i = 0; i < 4; i++) {
           ctx.beginPath(); ctx.arc(i * 12 - 18, 0, 3.5, 0, TAU); ctx.fill();
         }
         break;
+      }
     }
     ctx.restore();
     return;

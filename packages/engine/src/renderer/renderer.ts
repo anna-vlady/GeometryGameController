@@ -122,7 +122,8 @@ export class Renderer {
 
   drawMechCore(o: Mech) {
     const ctx = this.ctx;
-    const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
+    const activeLevelId = levelRegistry.getActiveLevelId();
+    const isNeonGlow = activeLevelId === 2 || this.pal.paper === '#0A0A16';
     const c = this.energyColors[o.energy || 0];
     ctx.save();
     ctx.rotate(o.coreRot);
@@ -130,6 +131,38 @@ export class Renderer {
     ctx.scale(sc, sc);
     ctx.fillStyle = c; ctx.strokeStyle = c;
     const cs = o.coreSize;
+
+    if (activeLevelId === 3) {
+      switch (o.energy) {
+        case 0:
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.75, 0, TAU); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.4, 0, TAU);
+          ctx.fillStyle = this.pal.cream; ctx.fill();
+          break;
+        case 1:
+          ctx.lineWidth = 1.8;
+          for (let r = 1; r <= 3; r++) {
+            ctx.beginPath(); ctx.arc(0, 0, (cs * r) / 3, 0, TAU); ctx.stroke();
+          }
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.2, 0, TAU); ctx.fill();
+          break;
+        case 2:
+          ctx.beginPath();
+          for (let p = 0; p < 6; p++) {
+            const a = p * (TAU / 6);
+            ctx.arc(Math.cos(a) * cs * 0.5, Math.sin(a) * cs * 0.5, cs * 0.35, 0, TAU);
+          }
+          ctx.fill(); ctx.stroke();
+          break;
+        case 3:
+          ctx.beginPath();
+          ctx.moveTo(0, -cs * 0.8); ctx.lineTo(cs * 0.6, 0); ctx.lineTo(0, cs * 0.8); ctx.lineTo(-cs * 0.6, 0);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          break;
+      }
+      ctx.restore();
+      return;
+    }
     if (isNeonGlow) {
       ctx.shadowColor = c;
       ctx.shadowBlur = 16;
@@ -212,8 +245,23 @@ export class Renderer {
         return [ex * ct - ey * st, ex * st + ey * ct];
       };
 
-      const isNeonGlowTrack = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
-      if (isNeonGlowTrack) {
+      const activeLvlTrackId = levelRegistry.getActiveLevelId();
+      const isNeonGlowTrack = activeLvlTrackId === 2 || this.pal.paper === '#0A0A16';
+      if (activeLvlTrackId === 3) {
+        ctx.strokeStyle = c;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        const petals = 6;
+        for (let a = 0; a <= 120; a++) {
+          const ang = (a / 120) * TAU;
+          const petalR = rr + Math.sin(ang * petals) * (rr * 0.15);
+          const [wx, wy] = pt(ang, petalR);
+          if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      } else if (isNeonGlowTrack) {
         ctx.strokeStyle = c;
         ctx.shadowColor = c;
         ctx.shadowBlur = 10;
@@ -968,12 +1016,15 @@ export class Renderer {
     const sc = (size / 2 - 8) / RANGE;
 
     ctx.save();
-    ctx.fillStyle = 'rgba(242,235,217,0.82)';
-    ctx.strokeStyle = 'rgba(30,27,22,0.3)';
-    ctx.lineWidth = 1;
+    ctx.fillStyle = this.pal.paper;
+    ctx.globalAlpha = 0.88;
     ctx.fillRect(x0, y0, size, size);
+    ctx.strokeStyle = this.pal.ink;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.45;
     ctx.strokeRect(x0, y0, size, size);
-    ctx.fillStyle = 'rgba(30,27,22,0.5)';
+    ctx.fillStyle = this.pal.ink;
+    ctx.globalAlpha = 0.85;
     ctx.font = '700 9px "Segoe UI", sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('КАРТА', x0 + 9, y0 + 13);
@@ -991,10 +1042,10 @@ export class Renderer {
           const mxp = cx + rx, myp = cy + ry;
           const rad = Math.max(1.3, Math.min(13, o.outerR * sc));
           ctx.globalAlpha = o === dominant ? 0.95 : 0.65;
-          ctx.fillStyle = ENERGY_COLOR[o.energy || 0];
+          ctx.fillStyle = this.energyColors[o.energy || 0];
           ctx.beginPath(); ctx.arc(mxp, myp, rad, 0, TAU); ctx.fill();
           if (o === dominant) {
-            ctx.globalAlpha = 0.5; ctx.strokeStyle = ENERGY_COLOR[o.energy || 0]; ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.5; ctx.strokeStyle = this.energyColors[o.energy || 0]; ctx.lineWidth = 1;
             ctx.beginPath(); ctx.arc(mxp, myp, rad + 3, 0, TAU); ctx.stroke();
           }
         }
