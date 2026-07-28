@@ -80,6 +80,26 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, i
     ctx.restore();
     return;
   }
+  if (levelId === 4) { // ASCII Art Theme
+    ctx.save();
+    ctx.font = `900 ${Math.round(s * 1.6)}px "Courier New", Consolas, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const asciiGlyphs = ['(0)', '<#>', '{o}', '^w^'];
+    ctx.fillText(asciiGlyphs[i % 4], 0, 0);
+    ctx.restore();
+    return;
+  }
+  if (levelId === 5) { // Unicode Art Theme
+    ctx.save();
+    ctx.font = `900 ${Math.round(s * 1.8)}px "Segoe UI Symbol", "Arial Unicode MS", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const unicodeGlyphs = ['✹', '⚛', '☸', '☯'];
+    ctx.fillText(unicodeGlyphs[i % 4], 0, 0);
+    ctx.restore();
+    return;
+  }
   if (isNeonGlow) {
     switch (i) {
       case 0: { // 5-Petal Cyber Rose / Flower
@@ -165,6 +185,26 @@ export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string
       ctx.beginPath();
       ctx.ellipse(0, 0, 4.5, 2.2, Math.PI / 4, 0, TAU); ctx.fill();
     }
+    return;
+  }
+  if (levelId === 4) { // ASCII Art Theme Note Beads
+    ctx.save();
+    ctx.font = `700 12px "Courier New", Consolas, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const charStr = dur >= 3 ? '[#]' : dur === 2 ? '<*>' : dur === 1.5 ? '(+)' : ':';
+    ctx.fillText(charStr, 0, 0);
+    ctx.restore();
+    return;
+  }
+  if (levelId === 5) { // Unicode Art Theme Note Beads
+    ctx.save();
+    ctx.font = `700 13px "Segoe UI Symbol", "Arial Unicode MS", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const charStr = dur >= 3 ? '❖' : dur === 2 ? '◈' : dur === 1.5 ? '✦' : '✧';
+    ctx.fillText(charStr, 0, 0);
+    ctx.restore();
     return;
   }
   ctx.fillStyle = col; ctx.strokeStyle = col;
@@ -326,6 +366,101 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         ctx.closePath();
         if (fill) ctx.fill(); else ctx.stroke();
         ctx.beginPath(); ctx.moveTo(0, -s * 0.8); ctx.lineTo(0, s * 0.8); ctx.stroke();
+        return;
+      }
+    }
+  }
+
+  if (levelId === 4) { // ASCII Art Theme
+    ctx.save();
+    ctx.font = `900 ${Math.max(10, Math.round(l * 0.18))}px "Courier New", Consolas, monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    switch (el.kind) {
+      case 'grid-cross':
+      case 'frame-box': {
+        const lines = [
+          '/T----======----=)',
+          '[ \\ (0)   \\~  \\-==)',
+          '\\---/ )JJ~~~ \\)'
+        ];
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 0, (idx - 1) * 14);
+        });
+        ctx.restore();
+        return;
+      }
+      case 'disc': {
+        const lines = [
+          '  .---.  ',
+          ' ./     \\. ',
+          '| (ASCII) |',
+          ' \'\\     /\' ',
+          '  \'---\'  '
+        ];
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 0, (idx - 2) * 12);
+        });
+        ctx.restore();
+        return;
+      }
+      case 'ring-disc': {
+        ctx.fillText('(( ( O ) ))', 0, 0);
+        ctx.restore();
+        return;
+      }
+      case 'plane':
+      case 'bar':
+      default: {
+        ctx.fillText('[==================]', 0, 0);
+        ctx.restore();
+        return;
+      }
+    }
+  }
+
+  if (levelId === 5) { // Unicode Art Matrix Theme
+    ctx.save();
+    ctx.font = `900 ${Math.max(11, Math.round(l * 0.2))}px "Segoe UI Symbol", "Arial Unicode MS", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    switch (el.kind) {
+      case 'grid-cross':
+      case 'frame-box': {
+        const lines = [
+          '░▒▓█ ◈ ☯ ◈ █▓▒░',
+          '╭──────────────╮',
+          '│ ✦  ☸  ⚛  ✹ │',
+          '╰──────────────╯'
+        ];
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 0, (idx - 1.5) * 15);
+        });
+        ctx.restore();
+        return;
+      }
+      case 'disc': {
+        const lines = [
+          '  ╭───╮  ',
+          ' │  ☸  │ ',
+          '  ╰───╯  '
+        ];
+        lines.forEach((line, idx) => {
+          ctx.fillText(line, 0, (idx - 1) * 14);
+        });
+        ctx.restore();
+        return;
+      }
+      case 'ring-disc': {
+        ctx.fillText('⊙ ⊚ ⊛ ☯ ⊛ ⊚ ⊙', 0, 0);
+        ctx.restore();
+        return;
+      }
+      case 'plane':
+      case 'bar':
+      default: {
+        ctx.fillText('╞══════════════════╡', 0, 0);
+        ctx.restore();
         return;
       }
     }

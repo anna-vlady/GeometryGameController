@@ -271,6 +271,38 @@ export class Renderer {
       ctx.restore();
       return;
     }
+    if (activeLevelId === 4) {
+      ctx.fillStyle = c;
+      ctx.font = `900 ${Math.max(12, Math.round(cs * 0.45))}px "Courier New", Consolas, monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lines = [
+        ' .---. ',
+        '| ASCII |',
+        ' \'---\' '
+      ];
+      lines.forEach((line, idx) => {
+        ctx.fillText(line, 0, (idx - 1) * 14);
+      });
+      ctx.restore();
+      return;
+    }
+    if (activeLevelId === 5) {
+      ctx.fillStyle = c;
+      ctx.font = `900 ${Math.max(14, Math.round(cs * 0.5))}px "Segoe UI Symbol", "Arial Unicode MS", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const lines = [
+        ' ╭───╮ ',
+        '│ ☸ ☯ │',
+        ' ╰───╯ '
+      ];
+      lines.forEach((line, idx) => {
+        ctx.fillText(line, 0, (idx - 1) * 16);
+      });
+      ctx.restore();
+      return;
+    }
     if (isNeonGlow) {
       ctx.shadowColor = c;
       ctx.shadowBlur = 16;
@@ -379,6 +411,30 @@ export class Renderer {
           const petalR = rr + Math.sin(lang * petals) * (rr * 0.15);
           const [lx, ly] = pt(lang, petalR);
           ctx.beginPath(); ctx.ellipse(lx, ly, 4, 2, lang + Math.PI / 4, 0, TAU); ctx.fill();
+        }
+        ctx.restore();
+      } else if (activeLvlTrackId === 4) {
+        ctx.save();
+        ctx.fillStyle = c;
+        ctx.font = '700 10px "Courier New", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let a = 0; a < 24; a++) {
+          const ang = (a / 24) * TAU;
+          const [wx, wy] = pt(ang, rr);
+          ctx.fillText(a % 2 === 0 ? '+' : '-', wx, wy);
+        }
+        ctx.restore();
+      } else if (activeLvlTrackId === 5) {
+        ctx.save();
+        ctx.fillStyle = c;
+        ctx.font = '700 11px "Segoe UI Symbol", "Arial Unicode MS", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (let a = 0; a < 20; a++) {
+          const ang = (a / 20) * TAU;
+          const [wx, wy] = pt(ang, rr);
+          ctx.fillText(a % 2 === 0 ? '◈' : '◇', wx, wy);
         }
         ctx.restore();
       } else if (isNeonGlowTrack) {
@@ -537,7 +593,39 @@ export class Renderer {
     const isNeonGlow = activeLevelConfig.id === 2 || pal.paper === '#0A0A16';
 
     // 1. Screen-space paper/primitive background
-    if (activeLevelConfig.usePrimitives) {
+    if (activeLevelConfig.id === 4) {
+      ctx.fillStyle = '#0D1117';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 255, 102, 0.04)';
+      ctx.font = '10px "Courier New", Consolas, monospace';
+      const asciiCharSet = '/|\\-+=*#@01';
+      for (let y = 15; y < H; y += 24) {
+        let lineStr = '';
+        for (let x = 0; x < W / 10; x++) {
+          lineStr += asciiCharSet[Math.floor((x + y + t * 5) % asciiCharSet.length)];
+        }
+        ctx.fillText(lineStr, 0, y);
+      }
+      ctx.restore();
+    } else if (activeLevelConfig.id === 5) {
+      ctx.fillStyle = '#0A0E1A';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 243, 255, 0.06)';
+      ctx.font = '12px "Segoe UI Symbol", "Arial Unicode MS", monospace';
+      const unicodeSet = '✧ ✦ ❖ ◈ ◆ ◇ ● ◉ ✹ ⚛ ☸ ☯';
+      for (let y = 20; y < H; y += 32) {
+        let lineStr = '';
+        for (let x = 0; x < W / 14; x++) {
+          lineStr += unicodeSet[Math.floor((x * 2 + y + t * 3) % unicodeSet.length)];
+        }
+        ctx.fillText(lineStr, 0, y);
+      }
+      ctx.restore();
+    } else if (activeLevelConfig.usePrimitives) {
       ctx.fillStyle = pal.paper;
       ctx.fillRect(0, 0, W, H);
     } else {
@@ -998,6 +1086,22 @@ export class Renderer {
             ctx.fillStyle = '#FAF0E6'; ctx.fill();
             break;
         }
+        ctx.restore();
+      } else if (activeLevelConfig.id === 4) {
+        ctx.fillStyle = slotColor;
+        ctx.font = '900 18px "Courier New", Consolas, monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const asciiShips = ['<[▲]>', '/\\_/', '<===>', '/|0|\\'];
+        ctx.fillText(asciiShips[pType], 0, 0);
+        ctx.restore();
+      } else if (activeLevelConfig.id === 5) {
+        ctx.fillStyle = slotColor;
+        ctx.font = '900 20px "Segoe UI Symbol", "Arial Unicode MS", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const unicodeShips = ['꧁༺▲༻꧂', '◈◈◆◈◈', '✦▲✦', '❖◈▲◈❖'];
+        ctx.fillText(unicodeShips[pType], 0, 0);
         ctx.restore();
       } else {
         switch (pType) {
