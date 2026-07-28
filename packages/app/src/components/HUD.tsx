@@ -227,18 +227,40 @@ export function HUD({ engine }: HUDProps) {
       {won && (
         <div className="proun-overlay" style={{ pointerEvents: 'auto', cursor: 'default' }}>
           <h1>РИТУАЛ<span className="red"> ВОСХОЖДЕНИЯ</span></h1>
-          <div className="sub" style={{ marginBottom: 0 }}>ЗАВЕРШЁН</div>
+          <div className="sub" style={{ marginBottom: 0 }}>
+            {engine.getLevelConfig().name} — ЗАВЕРШЁН
+          </div>
           <div className="sub" style={{ marginTop: '12px' }}>
             время подъёма — {Math.floor(climbSecs / 60)}:{String(climbSecs % 60).padStart(2, '0')}
           </div>
           <div className="sub" style={{ marginTop: '6px', fontSize: '14px', opacity: 0.7 }}>
             высота — {ALTITUDE_MAX} м · вершина горы Арарат
           </div>
-          <div className="start" style={{ marginTop: '20px' }}>
-            R — начать восхождение заново
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+            <button
+              onClick={() => { engine.nextLevel(); setWon(false); }}
+              style={{
+                background: '#BF3B2B',
+                color: '#FFF',
+                border: 'none',
+                padding: '12px 24px',
+                fontSize: '14px',
+                fontWeight: '900',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                letterSpacing: '1px',
+                boxShadow: '0 4px 15px rgba(191,59,43,0.4)'
+              }}
+            >
+              🚀 ПЕРЕЙТИ НА СЛЕДУЮЩИЙ УРОВЕНЬ →
+            </button>
+            <div className="start" style={{ fontSize: '12px', opacity: 0.7 }}>
+              R — начать заново этот уровень
+            </div>
           </div>
         </div>
       )}
     </div>
   );
 }
+

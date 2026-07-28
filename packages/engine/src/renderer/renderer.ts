@@ -5,6 +5,8 @@ import { ENERGY_COLOR, CREAM, RED, INK, PAPER_LIGHT, PAPER_DARK } from '../world
 import { SUMMIT_Y } from '../physics/constants';
 import { ringPos } from '../world/generator';
 import { shadowAnd, drawGlyph, drawBead, prounShape, drawDecor, drawFar } from './shapes';
+import { levelRegistry } from '../levels';
+
 
 const FAR_FACTOR = 0.35;
 const FAR_CHUNK = 1500;
@@ -290,20 +292,29 @@ export class Renderer {
 
     ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 
-    // 1. Screen-space paper background
-    const altN = Math.max(-1, Math.min(1, camY / 7000));
-    const bg = ctx.createLinearGradient(0, 0, 0, H);
-    bg.addColorStop(0, mixColor(PAPER_LIGHT, PAPER_DARK, clamp01(0.5 + altN * 0.5 - 0.18)));
-    bg.addColorStop(1, mixColor(PAPER_LIGHT, PAPER_DARK, clamp01(0.5 + altN * 0.5 + 0.18)));
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, W, H);
+    const activeLevelConfig = levelRegistry.getActiveConfig();
+    const pal = activeLevelConfig.palette;
 
-    if (this.grainPattern) {
-      ctx.globalAlpha = 0.5;
-      ctx.fillStyle = this.grainPattern;
+    // 1. Screen-space paper/primitive background
+    if (activeLevelConfig.usePrimitives) {
+      ctx.fillStyle = pal.paper;
       ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
+    } else {
+      const altN = Math.max(-1, Math.min(1, camY / 7000));
+      const bg = ctx.createLinearGradient(0, 0, 0, H);
+      bg.addColorStop(0, mixColor(pal.paperLight, pal.paperDark, clamp01(0.5 + altN * 0.5 - 0.18)));
+      bg.addColorStop(1, mixColor(pal.paperLight, pal.paperDark, clamp01(0.5 + altN * 0.5 + 0.18)));
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, W, H);
+
+      if (this.grainPattern) {
+        ctx.globalAlpha = 0.5;
+        ctx.fillStyle = this.grainPattern;
+        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
     }
+
 
     // 2. Far architecture (parallax)
     ctx.save();

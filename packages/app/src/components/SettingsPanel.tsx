@@ -22,6 +22,28 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
   const [particles, setParticlesState] = useState(70);
   const [seed, setSeed] = useState(engine ? engine.world.seed : 137);
 
+  // Уровни и моды
+  const [activeLevel, setActiveLevel] = useState<number>(engine ? engine.getLevelId() : 1);
+  const [usePrimitives, setUsePrimitivesState] = useState<boolean>(
+    engine ? engine.getLevelConfig().usePrimitives : false
+  );
+
+  const handleSelectLevel = (lvl: number) => {
+    setActiveLevel(lvl);
+    if (engine) {
+      const cfg = engine.setLevel(lvl);
+      setUsePrimitivesState(cfg.usePrimitives);
+    }
+  };
+
+  const handleTogglePrimitives = () => {
+    const nextVal = !usePrimitives;
+    setUsePrimitivesState(nextVal);
+    if (engine) {
+      engine.setUsePrimitives(activeLevel, nextVal);
+    }
+  };
+
   const handlePhysicsChange = (key: string, value: number) => {
     const newParams = { ...params, [key]: value };
     setParams(newParams);
@@ -54,7 +76,50 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
         <span className="tog">▾</span>
       </div>
 
+      <div className="proun-panel-section">Уровни &amp; Моды</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '6px' }}>
+        {[1, 2, 3, 4, 5].map((lvl) => (
+          <button
+            key={lvl}
+            style={{
+              background: activeLevel === lvl ? '#BF3B2B' : 'rgba(30,27,22,0.7)',
+              color: '#FFF',
+              padding: '6px 2px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              border: activeLevel === lvl ? '2px solid #FFF' : '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+            onClick={() => handleSelectLevel(lvl)}
+          >
+            Ур. {lvl}
+          </button>
+        ))}
+      </div>
+      <div style={{ marginBottom: '8px', fontSize: '10px', color: '#A09888', fontStyle: 'italic' }}>
+        {engine ? engine.getLevelConfig().name : `Уровень ${activeLevel}`}
+      </div>
+      <button
+        style={{
+          width: '100%',
+          background: usePrimitives ? '#C99B3F' : '#3F5666',
+          color: '#FFF',
+          padding: '8px',
+          borderRadius: '4px',
+          fontWeight: 'bold',
+          fontSize: '11px',
+          border: 'none',
+          cursor: 'pointer',
+          marginBottom: '12px'
+        }}
+        onClick={handleTogglePrimitives}
+      >
+        {usePrimitives ? '✦ Стиль: Чистые Примитивы' : '🎨 Стиль: Кастомное Оформление'}
+      </button>
+
       <div className="proun-panel-section">Мир &amp; Джойстик</div>
+
       <div className="proun-seed-row" style={{ marginBottom: '8px' }}>
         <input
           type="number"

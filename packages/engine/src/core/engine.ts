@@ -9,6 +9,9 @@ import { Renderer } from '../renderer/renderer';
 import { Mech, Voice, PlayerSlot } from '../world/types';
 import { MAXTANK, SPAWN, SINGLE_BOOST_DUR, RHYTHM_BOOST_DUR, RHYTHM_TOLERANCE } from '../physics/constants';
 import { OCT } from '../world/constants';
+import { levelRegistry, LevelConfig } from '../levels';
+
+
 
 export interface EngineConfig {
   canvas: HTMLCanvasElement;
@@ -513,4 +516,30 @@ export class ProunEngine {
   setObjVol(v: number) { this.audio.setObjVol(v); }
   setPlrVol(v: number) { this.audio.setPlrVol(v); }
   setParticleFrac(v: number) { this.particleFrac = v; }
+
+  getLevelId(): number {
+    return levelRegistry.getActiveLevelId();
+  }
+
+  getLevelConfig(): LevelConfig {
+    return levelRegistry.getActiveConfig();
+  }
+
+  setLevel(id: number): LevelConfig {
+    const config = levelRegistry.setActiveLevelId(id);
+    return config;
+  }
+
+  setUsePrimitives(id: number, usePrimitives: boolean): void {
+    levelRegistry.setUsePrimitives(id, usePrimitives);
+  }
+
+  nextLevel(): LevelConfig {
+    const nextId = (levelRegistry.getActiveLevelId() % 5) + 1;
+    this.won = false;
+    this.player.x = SPAWN.x;
+    this.player.y = SPAWN.y;
+    return this.setLevel(nextId);
+  }
 }
+
