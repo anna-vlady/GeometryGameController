@@ -211,18 +211,38 @@ export class Renderer {
         return [ex * ct - ey * st, ex * st + ey * ct];
       };
 
-      ctx.strokeStyle = this.ink;
-      ctx.globalAlpha = 0.15;
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      for (let a = 0; a <= 72; a++) {
-        const ang = a / 72 * TAU;
-        const rad = ring.wavy ? rr + Math.sin(ang * 7 + t * 1.5 * ring.dir!) * 5 : rr;
-        const [wx, wy] = pt(ang, rad);
-        if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+      const isNeonGlowTrack = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
+      if (isNeonGlowTrack) {
+        ctx.strokeStyle = c;
+        ctx.shadowColor = c;
+        ctx.shadowBlur = 10;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let a = 0; a <= 96; a++) {
+          const ang = (a / 96) * TAU;
+          const wave = Math.sin(ang * 12 + t * 4) * 8 + Math.cos(ang * 4) * 4;
+          const rad = rr + wave;
+          const [wx, wy] = pt(ang, rad);
+          if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      } else {
+        ctx.strokeStyle = this.ink;
+        ctx.globalAlpha = 0.15;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        for (let a = 0; a <= 72; a++) {
+          const ang = a / 72 * TAU;
+          const rad = ring.wavy ? rr + Math.sin(ang * 7 + t * 1.5 * ring.dir!) * 5 : rr;
+          const [wx, wy] = pt(ang, rad);
+          if (a === 0) ctx.moveTo(wx, wy); else ctx.lineTo(wx, wy);
+        }
+        ctx.closePath();
+        ctx.stroke();
       }
-      ctx.closePath();
-      ctx.stroke();
       ctx.globalAlpha = 1;
 
       // Beads
@@ -261,7 +281,8 @@ export class Renderer {
       ctx.translate(hx, hy);
       ctx.rotate(ha + (ring.tilt || 0));
       ctx.fillStyle = c; ctx.strokeStyle = c;
-      drawGlyph(ctx, o.energy || 0, 6 + ring.headPulse * 3.5);
+      const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
+      drawGlyph(ctx, o.energy || 0, 6 + ring.headPulse * 3.5, isNeonGlow);
       ctx.restore();
     }
     this.drawMechCore(o);
@@ -528,7 +549,7 @@ export class Renderer {
           ctx.rotate(t * 1.5 + i);
           ctx.fillStyle = ENERGY_COLOR[i];
           ctx.strokeStyle = ENERGY_COLOR[i];
-          drawGlyph(ctx, i, s);
+          drawGlyph(ctx, i, s, isNeonGlow);
           ctx.restore();
         }
 
@@ -866,7 +887,7 @@ export class Renderer {
 
         ctx.fillStyle = ENERGY_COLOR[i];
         ctx.strokeStyle = ENERGY_COLOR[i];
-        drawGlyph(ctx, i, s);
+        drawGlyph(ctx, i, s, isNeonGlow);
         if (orb.score > 0.05) {
           ctx.globalAlpha = orb.score * 0.35;
           ctx.lineWidth = 1.5;

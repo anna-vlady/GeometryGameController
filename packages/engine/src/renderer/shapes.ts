@@ -14,7 +14,55 @@ export function shadowAnd(ctx: CanvasRenderingContext2D, fillFn: (fill: boolean)
   fillFn(false);
 }
 
-export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number) {
+export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, isNeonGlow?: boolean) {
+  if (isNeonGlow) {
+    switch (i) {
+      case 0: { // 5-Petal Cyber Rose / Flower
+        ctx.beginPath();
+        for (let p = 0; p < 5; p++) {
+          const a = p * (TAU / 5);
+          const r1 = s * 1.3, r2 = s * 0.55;
+          const x1 = Math.cos(a) * r1, y1 = Math.sin(a) * r1;
+          const x2 = Math.cos(a + TAU / 10) * r2, y2 = Math.sin(a + TAU / 10) * r2;
+          if (p === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
+          ctx.lineTo(x2, y2);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        break;
+      }
+      case 1: { // Electric Lightning Bolt
+        ctx.beginPath();
+        ctx.moveTo(s * 0.3, -s * 1.4);
+        ctx.lineTo(-s * 0.8, -s * 0.1);
+        ctx.lineTo(-s * 0.1, 0);
+        ctx.lineTo(-s * 0.5, s * 1.4);
+        ctx.lineTo(s * 0.8, s * 0.1);
+        ctx.lineTo(s * 0.1, 0);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        break;
+      }
+      case 2: { // Crescent Moon
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 1.1, 0.4 * Math.PI, 1.6 * Math.PI, false);
+        ctx.arc(-s * 0.4, 0, s * 0.9, 1.5 * Math.PI, 0.5 * Math.PI, true);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        break;
+      }
+      case 3: { // 5-Bar Equalizer Wave
+        const bw = s * 0.35, gap = s * 0.2;
+        const totalW = 5 * bw + 4 * gap;
+        const startX = -totalW / 2;
+        const heights = [0.5, 1.1, 1.5, 0.9, 0.6];
+        for (let b = 0; b < 5; b++) {
+          const bh = s * heights[b];
+          ctx.fillRect(startX + b * (bw + gap), -bh / 2, bw, bh);
+        }
+        break;
+      }
+    }
+    return;
+  }
+
   switch (i) {
     case 0: ctx.fillRect(-s, -s, s * 2, s * 2); break;
     case 1:
