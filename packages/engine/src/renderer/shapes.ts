@@ -14,7 +14,56 @@ export function shadowAnd(ctx: CanvasRenderingContext2D, fillFn: (fill: boolean)
   fillFn(false);
 }
 
-export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, isNeonGlow?: boolean) {
+export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, isNeonGlow?: boolean, levelId?: number) {
+  if (levelId === 3) {
+    switch (i) {
+      case 0: { // Sakura Cherry Blossom 🌸
+        ctx.beginPath();
+        for (let p = 0; p < 5; p++) {
+          const a = p * (TAU / 5) - Math.PI / 2;
+          const r1 = s * 1.35, r2 = s * 0.45;
+          const x1 = Math.cos(a) * r1, y1 = Math.sin(a) * r1;
+          const x2 = Math.cos(a + TAU / 10) * r2, y2 = Math.sin(a + TAU / 10) * r2;
+          if (p === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
+          ctx.lineTo(x2, y2);
+        }
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, s * 0.35, 0, TAU); ctx.fill();
+        break;
+      }
+      case 1: { // Fern Frond Leaf 🍃
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.4);
+        ctx.quadraticCurveTo(s * 1.2, 0, 0, s * 1.4);
+        ctx.quadraticCurveTo(-s * 1.2, 0, 0, -s * 1.4);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s * 1.2); ctx.lineTo(0, s * 1.2); ctx.stroke();
+        break;
+      }
+      case 2: { // Sunflower Daisy 🌼
+        ctx.beginPath();
+        for (let p = 0; p < 8; p++) {
+          const a = p * (TAU / 8);
+          const r = s * 1.25;
+          const px = Math.cos(a) * r, py = Math.sin(a) * r;
+          ctx.arc(px * 0.5, py * 0.5, s * 0.45, 0, TAU);
+        }
+        ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, s * 0.5, 0, TAU); ctx.fill();
+        break;
+      }
+      case 3: { // Tulip Bud 🌷
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.3);
+        ctx.quadraticCurveTo(s * 1.1, -s * 0.3, s * 0.7, s * 1.1);
+        ctx.lineTo(-s * 0.7, s * 1.1);
+        ctx.quadraticCurveTo(-s * 1.1, -s * 0.3, 0, -s * 1.3);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        break;
+      }
+    }
+    return;
+  }
   if (isNeonGlow) {
     switch (i) {
       case 0: { // 5-Petal Cyber Rose / Flower
@@ -78,7 +127,20 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, i
   }
 }
 
-export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string, isNeonGlow?: boolean) {
+export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string, isNeonGlow?: boolean, levelId?: number) {
+  ctx.fillStyle = col; ctx.strokeStyle = col;
+  if (levelId === 3) {
+    if (dur >= 3) {
+      ctx.beginPath(); ctx.arc(0, 0, 7.5, 0, TAU); ctx.fill(); ctx.stroke();
+    } else if (dur === 2) {
+      ctx.beginPath(); ctx.ellipse(0, 0, 7, 4, Math.PI / 4, 0, TAU); ctx.fill();
+    } else if (dur === 1.5) {
+      ctx.fillRect(-7, -2, 14, 4);
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+    }
+    return;
+  }
   ctx.fillStyle = col; ctx.strokeStyle = col;
   if (isNeonGlow) {
     if (dur >= 3) {
@@ -112,8 +174,56 @@ export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string
   }
 }
 
-export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean, isNeonGlow?: boolean) {
+export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean, isNeonGlow?: boolean, levelId?: number) {
   const l = el.len || 30, w = el.wid || 10;
+  if (levelId === 3) {
+    switch (el.kind) {
+      case 'plane':
+      case 'bar': {
+        const r = Math.min(l / 2, w / 2);
+        ctx.beginPath();
+        if ((ctx as any).roundRect) {
+          (ctx as any).roundRect(-l / 2, -w / 2, l, w, r);
+        } else {
+          ctx.rect(-l / 2, -w / 2, l, w);
+        }
+        if (fill) ctx.fill(); else ctx.stroke();
+        ctx.beginPath(); ctx.arc(-l * 0.2, -w / 2 - 3, 3, 0, TAU); ctx.fill();
+        return;
+      }
+      case 'disc': {
+        const r = l / 2;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+        if (fill) ctx.fill(); else ctx.stroke();
+        for (let p = 0; p < 8; p++) {
+          const a = p * (TAU / 8);
+          const px = Math.cos(a) * r * 0.85, py = Math.sin(a) * r * 0.85;
+          ctx.beginPath(); ctx.arc(px, py, r * 0.22, 0, TAU); ctx.stroke();
+        }
+        return;
+      }
+      case 'ring-disc': {
+        const r = l / 2;
+        ctx.lineWidth = 1.6;
+        for (let k = 1; k <= 3; k++) {
+          ctx.beginPath(); ctx.arc(0, 0, (r * k) / 3, 0, TAU); ctx.stroke();
+        }
+        return;
+      }
+      case 'wedge': {
+        const s = l / 2;
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.8);
+        ctx.quadraticCurveTo(-s * 1.2, -s * 0.2, -s, -s);
+        ctx.quadraticCurveTo(0, -s * 1.4, s, -s);
+        ctx.quadraticCurveTo(s * 1.2, -s * 0.2, 0, s * 0.8);
+        ctx.closePath();
+        if (fill) ctx.fill(); else ctx.stroke();
+        return;
+      }
+    }
+  }
+
   if (isNeonGlow) {
     switch (el.kind) {
       case 'plane':
@@ -285,13 +395,29 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
   }
 }
 
-export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string) {
+export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string, levelId?: number) {
   ctx.save();
   ctx.translate(d.x, d.y);
   ctx.rotate(d.rot);
   const color = inkCol || 'rgba(30,27,22,0.28)';
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
+  if (levelId === 3) {
+    ctx.font = `${Math.max(14, d.size * 1.1)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    switch (d.kind) {
+      case 'cross': ctx.fillText('🍃', 0, 0); break;
+      case 'arc': ctx.fillText('🌸', 0, 0); break;
+      case 'outline': ctx.fillText('🍀', 0, 0); break;
+      case 'dots':
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath(); ctx.arc(i * 12 - 18, 0, 3.5, 0, TAU); ctx.fill();
+        }
+        break;
+    }
+    ctx.restore();
+    return;
+  }
   if (inkCol) {
     ctx.shadowColor = '#00F0FF';
     ctx.shadowBlur = 10;
@@ -345,8 +471,34 @@ export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string
   ctx.restore();
 }
 
-export function drawFar(ctx: CanvasRenderingContext2D, kind: number, s: number, isNeonGlow?: boolean) {
+export function drawFar(ctx: CanvasRenderingContext2D, kind: number, s: number, isNeonGlow?: boolean, levelId?: number) {
   ctx.lineWidth = 2;
+  if (levelId === 3) {
+    switch (kind) {
+      case 0: { // Pine Tree Silhouette
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 0.7); ctx.lineTo(s * 0.45, s * 0.4); ctx.lineTo(-s * 0.45, s * 0.4);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillRect(-2, s * 0.4, 4, s * 0.2);
+        break;
+      }
+      case 1: { // Sakura Blossom Outline
+        ctx.beginPath(); ctx.arc(0, 0, s * 0.4, 0, TAU); ctx.stroke();
+        for (let p = 0; p < 5; p++) {
+          const a = p * (TAU / 5);
+          ctx.beginPath(); ctx.arc(Math.cos(a) * s * 0.35, Math.sin(a) * s * 0.35, s * 0.22, 0, TAU); ctx.stroke();
+        }
+        break;
+      }
+      case 2: { // Forest Canopy Triangle
+        ctx.beginPath();
+        ctx.moveTo(0, -s / 2); ctx.lineTo(s / 2, s / 2); ctx.lineTo(-s / 2, s / 2);
+        ctx.closePath(); ctx.stroke();
+        break;
+      }
+    }
+    return;
+  }
   if (isNeonGlow) {
     switch (kind) {
       case 0: { // Equalizer Skyscraper

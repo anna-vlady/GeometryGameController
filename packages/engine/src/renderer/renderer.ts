@@ -93,16 +93,17 @@ export class Renderer {
       ctx.shadowBlur = 12;
     }
 
+    const activeLevelId = levelRegistry.getActiveLevelId();
     ctx.save();
     ctx.translate((5 + el.depth * 11) * 0.6, 5 + el.depth * 11);
     ctx.globalAlpha = 0.12;
     ctx.fillStyle = this.ink; ctx.strokeStyle = this.ink;
-    prounShape(ctx, el, true, isNeonGlow);
+    prounShape(ctx, el, true, isNeonGlow, activeLevelId);
     ctx.restore();
 
     ctx.globalAlpha = 1;
     ctx.fillStyle = col; ctx.strokeStyle = col;
-    prounShape(ctx, el, el.kind !== 'needle', isNeonGlow);
+    prounShape(ctx, el, el.kind !== 'needle', isNeonGlow, activeLevelId);
 
     if (el.kind === 'plane') {
       ctx.globalAlpha = 0.5; ctx.strokeStyle = this.ink; ctx.lineWidth = 1.3;
@@ -253,8 +254,9 @@ export class Renderer {
         if (dd < 240 && dd > 1) { const m = (1 - dd / 240) * 12; bx += ddx / dd * m; by += ddy / dd * m; }
         ctx.save();
         ctx.translate(bx, by);
-        const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
-        drawBead(ctx, ring.talea[i], i === 0 ? c : this.ink, isNeonGlow);
+        const activeLvlId = levelRegistry.getActiveLevelId();
+        const isNeonGlow = activeLvlId === 2 || this.pal.paper === '#0A0A16';
+        drawBead(ctx, ring.talea[i], i === 0 ? c : this.ink, isNeonGlow, activeLvlId);
         if (ring.flash[i] > 0.03) {
           ctx.strokeStyle = c;
           ctx.globalAlpha = ring.flash[i] * 0.8;
@@ -281,8 +283,9 @@ export class Renderer {
       ctx.translate(hx, hy);
       ctx.rotate(ha + (ring.tilt || 0));
       ctx.fillStyle = c; ctx.strokeStyle = c;
-      const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
-      drawGlyph(ctx, o.energy || 0, 6 + ring.headPulse * 3.5, isNeonGlow);
+      const activeLvlId = levelRegistry.getActiveLevelId();
+      const isNeonGlow = activeLvlId === 2 || this.pal.paper === '#0A0A16';
+      drawGlyph(ctx, o.energy || 0, 6 + ring.headPulse * 3.5, isNeonGlow, activeLvlId);
       ctx.restore();
     }
     this.drawMechCore(o);
@@ -567,7 +570,7 @@ export class Renderer {
           ctx.rotate(t * 1.5 + i);
           ctx.fillStyle = ENERGY_COLOR[i];
           ctx.strokeStyle = ENERGY_COLOR[i];
-          drawGlyph(ctx, i, s, isNeonGlow);
+          drawGlyph(ctx, i, s, isNeonGlow, activeLevelConfig.id);
           ctx.restore();
         }
 
@@ -583,7 +586,7 @@ export class Renderer {
     for (let cy = y0; cy <= y1; cy++)
       for (let cx = x0; cx <= x1; cx++) {
         const ch = chunks.get(cx + ',' + cy);
-        if (ch) for (const d of ch.decor) drawDecor(ctx, d, isNeonGlow ? 'rgba(0, 240, 255, 0.55)' : undefined);
+        if (ch) for (const d of ch.decor) drawDecor(ctx, d, isNeonGlow ? 'rgba(0, 240, 255, 0.55)' : undefined, activeLevelConfig.id);
       }
       
     for (let cy = y0; cy <= y1; cy++)
@@ -905,7 +908,7 @@ export class Renderer {
 
         ctx.fillStyle = ENERGY_COLOR[i];
         ctx.strokeStyle = ENERGY_COLOR[i];
-        drawGlyph(ctx, i, s, isNeonGlow);
+        drawGlyph(ctx, i, s, isNeonGlow, activeLevelConfig.id);
         if (orb.score > 0.05) {
           ctx.globalAlpha = orb.score * 0.35;
           ctx.lineWidth = 1.5;
