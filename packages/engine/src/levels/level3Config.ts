@@ -7,14 +7,14 @@ export const LEVEL_3_CONFIG: LevelConfig = {
   usePrimitives: false,
   targetAltitude: 5165,
   palette: {
-    paper: '#D2E8D4',
-    ink: '#3B593E',
+    paper: '#121814',
+    ink: '#8FA893',
     red: '#FFB7C5',
     ochre: '#FDFD96',
     blue: '#AEC6CF',
     cream: '#FAF0E6',
-    paperLight: [230, 244, 232],
-    paperDark: [190, 218, 192],
+    paperLight: [30, 40, 32],
+    paperDark: [12, 18, 14],
     energyColors: ['#FFB7C5', '#AEC6CF', '#FDFD96', '#C3B1E1']
   },
   audio: {

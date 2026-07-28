@@ -134,30 +134,49 @@ export class Renderer {
 
     if (activeLevelId === 3) {
       switch (o.energy) {
-        case 0:
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.75, 0, TAU); ctx.fill(); ctx.stroke();
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.4, 0, TAU);
-          ctx.fillStyle = this.pal.cream; ctx.fill();
-          break;
-        case 1:
-          ctx.lineWidth = 1.8;
-          for (let r = 1; r <= 3; r++) {
-            ctx.beginPath(); ctx.arc(0, 0, (cs * r) / 3, 0, TAU); ctx.stroke();
+        case 0: // Sakura Rose Planet 🌸
+          ctx.beginPath();
+          for (let p = 0; p < 12; p++) {
+            const a = p * (TAU / 12);
+            const px = Math.cos(a) * cs * 0.75, py = Math.sin(a) * cs * 0.75;
+            ctx.arc(px, py, cs * 0.35, 0, TAU);
           }
-          ctx.beginPath(); ctx.arc(0, 0, cs * 0.2, 0, TAU); ctx.fill();
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.45, 0, TAU);
+          ctx.fillStyle = '#FAF0E6'; ctx.fill(); ctx.stroke();
           break;
-        case 2:
+        case 1: // Blue Lotus Planet 🪷
+          ctx.beginPath();
+          for (let p = 0; p < 8; p++) {
+            const a = p * (TAU / 8);
+            const px = Math.cos(a) * cs * 0.8, py = Math.sin(a) * cs * 0.8;
+            ctx.arc(px * 0.6, py * 0.6, cs * 0.38, 0, TAU);
+          }
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.3, 0, TAU);
+          ctx.fillStyle = '#FAF0E6'; ctx.fill();
+          break;
+        case 2: // Giant Sunflower Planet 🌻
+          ctx.beginPath();
+          for (let p = 0; p < 16; p++) {
+            const a = p * (TAU / 16);
+            const px = Math.cos(a) * cs * 0.9, py = Math.sin(a) * cs * 0.9;
+            ctx.arc(px * 0.7, py * 0.7, cs * 0.3, 0, TAU);
+          }
+          ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.5, 0, TAU);
+          ctx.fillStyle = '#2A3A2D'; ctx.fill(); ctx.stroke();
+          break;
+        case 3: // Violet Orchid Planet 🪻
           ctx.beginPath();
           for (let p = 0; p < 6; p++) {
             const a = p * (TAU / 6);
-            ctx.arc(Math.cos(a) * cs * 0.5, Math.sin(a) * cs * 0.5, cs * 0.35, 0, TAU);
+            const px = Math.cos(a) * cs * 0.85, py = Math.sin(a) * cs * 0.85;
+            ctx.arc(px * 0.55, py * 0.55, cs * 0.42, 0, TAU);
           }
           ctx.fill(); ctx.stroke();
-          break;
-        case 3:
-          ctx.beginPath();
-          ctx.moveTo(0, -cs * 0.8); ctx.lineTo(cs * 0.6, 0); ctx.lineTo(0, cs * 0.8); ctx.lineTo(-cs * 0.6, 0);
-          ctx.closePath(); ctx.fill(); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.35, 0, TAU);
+          ctx.fillStyle = '#FAF0E6'; ctx.fill();
           break;
       }
       ctx.restore();
@@ -967,7 +986,8 @@ export class Renderer {
 
       for (let i = 0; i < 4; i++) {
         if (sFlash[i] < 0.04) continue;
-        ctx.strokeStyle = ENERGY_COLOR[i];
+        const orbCol = this.energyColors[i];
+        ctx.strokeStyle = orbCol;
         ctx.globalAlpha = sFlash[i] * 0.6;
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -1006,8 +1026,9 @@ export class Renderer {
         // Rotate internal glyph relative to motion axis
         ctx.rotate(orb.phase * 1.4 + i - moveAngle);
 
-        ctx.fillStyle = ENERGY_COLOR[i];
-        ctx.strokeStyle = ENERGY_COLOR[i];
+        const orbCol = this.energyColors[i];
+        ctx.fillStyle = orbCol;
+        ctx.strokeStyle = orbCol;
         drawGlyph(ctx, i, s, isNeonGlow, activeLevelConfig.id);
         if (orb.score > 0.05) {
           ctx.globalAlpha = orb.score * 0.35;
