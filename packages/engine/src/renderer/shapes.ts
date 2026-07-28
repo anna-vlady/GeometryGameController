@@ -17,48 +17,43 @@ export function shadowAnd(ctx: CanvasRenderingContext2D, fillFn: (fill: boolean)
 export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, isNeonGlow?: boolean, levelId?: number) {
   if (levelId === 3) {
     switch (i) {
-      case 0: { // Sakura Cherry Blossom 🌸
-        ctx.beginPath();
-        for (let p = 0; p < 5; p++) {
-          const a = p * (TAU / 5) - Math.PI / 2;
-          const r1 = s * 1.35, r2 = s * 0.45;
-          const x1 = Math.cos(a) * r1, y1 = Math.sin(a) * r1;
-          const x2 = Math.cos(a + TAU / 10) * r2, y2 = Math.sin(a + TAU / 10) * r2;
-          if (p === 0) ctx.moveTo(x1, y1); else ctx.lineTo(x1, y1);
-          ctx.lineTo(x2, y2);
-        }
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, s * 0.35, 0, TAU); ctx.fill();
-        break;
-      }
-      case 1: { // Fern Frond Leaf 🍃
-        ctx.beginPath();
-        ctx.moveTo(0, -s * 1.4);
-        ctx.quadraticCurveTo(s * 1.2, 0, 0, s * 1.4);
-        ctx.quadraticCurveTo(-s * 1.2, 0, 0, -s * 1.4);
-        ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -s * 1.2); ctx.lineTo(0, s * 1.2); ctx.stroke();
-        break;
-      }
-      case 2: { // Sunflower Daisy 🌼
-        ctx.beginPath();
-        for (let p = 0; p < 8; p++) {
-          const a = p * (TAU / 8);
-          const r = s * 1.25;
-          const px = Math.cos(a) * r, py = Math.sin(a) * r;
-          ctx.arc(px * 0.5, py * 0.5, s * 0.45, 0, TAU);
-        }
-        ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(0, 0, s * 0.5, 0, TAU); ctx.fill();
-        break;
-      }
-      case 3: { // Tulip Bud 🌷
+      case 0: { // Sakura Blossom Flower Petal (Notched tip) 🌸
         ctx.beginPath();
         ctx.moveTo(0, -s * 1.3);
-        ctx.quadraticCurveTo(s * 1.1, -s * 0.3, s * 0.7, s * 1.1);
-        ctx.lineTo(-s * 0.7, s * 1.1);
-        ctx.quadraticCurveTo(-s * 1.1, -s * 0.3, 0, -s * 1.3);
+        ctx.quadraticCurveTo(s * 1.1, -s * 0.4, s * 0.8, s * 1.1);
+        ctx.lineTo(0, s * 0.7);
+        ctx.lineTo(-s * 0.8, s * 1.1);
+        ctx.quadraticCurveTo(-s * 1.1, -s * 0.4, 0, -s * 1.3);
         ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s * 0.8); ctx.lineTo(0, s * 0.5); ctx.stroke();
+        break;
+      }
+      case 1: { // Willow Leaf Petal 🍃
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.4);
+        ctx.quadraticCurveTo(s * 1.0, 0, 0, s * 1.4);
+        ctx.quadraticCurveTo(-s * 1.0, 0, 0, -s * 1.4);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s * 1.1); ctx.lineTo(0, s * 1.1); ctx.stroke();
+        break;
+      }
+      case 2: { // Ginkgo Fan Petal 🌼
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.9);
+        ctx.quadraticCurveTo(-s * 1.3, -s * 0.1, -s * 0.95, -s * 0.95);
+        ctx.quadraticCurveTo(0, -s * 1.4, s * 0.95, -s * 0.95);
+        ctx.quadraticCurveTo(s * 1.3, -s * 0.1, 0, s * 0.9);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, s * 0.7); ctx.lineTo(0, -s * 0.8); ctx.stroke();
+        break;
+      }
+      case 3: { // Lotus Flower Petal 🪷
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.4);
+        ctx.quadraticCurveTo(s * 1.35, -s * 0.2, 0, s * 1.2);
+        ctx.quadraticCurveTo(-s * 1.35, -s * 0.2, 0, -s * 1.4);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s * 0.9); ctx.lineTo(0, s * 0.8); ctx.stroke();
         break;
       }
     }
@@ -219,6 +214,54 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         ctx.quadraticCurveTo(s * 1.2, -s * 0.2, 0, s * 0.8);
         ctx.closePath();
         if (fill) ctx.fill(); else ctx.stroke();
+        return;
+      }
+      case 'grid-cross':
+      case 'frame-box': {
+        ctx.lineWidth = 2;
+        ctx.fillRect(-3, -l / 2, 6, l);
+        ctx.strokeRect(-3, -l / 2, 6, l);
+        ctx.beginPath();
+        ctx.moveTo(-l * 0.4, -l * 0.1); ctx.lineTo(0, -l * 0.25); ctx.lineTo(l * 0.4, -l * 0.1);
+        ctx.moveTo(-l * 0.3, l * 0.15); ctx.lineTo(0, 0); ctx.lineTo(l * 0.3, l * 0.15);
+        ctx.stroke();
+        const puffs = [
+          { x: 0, y: -l * 0.42, r: l * 0.25 },
+          { x: -l * 0.28, y: -l * 0.25, r: l * 0.2 },
+          { x: l * 0.28, y: -l * 0.25, r: l * 0.2 },
+          { x: -l * 0.22, y: 0, r: l * 0.18 },
+          { x: l * 0.22, y: 0, r: l * 0.18 }
+        ];
+        for (const pf of puffs) {
+          ctx.beginPath(); ctx.arc(pf.x, pf.y, pf.r, 0, TAU);
+          ctx.fill(); ctx.stroke();
+        }
+        return;
+      }
+      case 'needle': {
+        ctx.lineWidth = Math.max(2, w);
+        ctx.beginPath();
+        const halfL = l / 2;
+        ctx.moveTo(-halfL, 0);
+        ctx.quadraticCurveTo(0, w * 1.5, halfL, 0);
+        ctx.stroke();
+        for (let k = -2; k <= 2; k++) {
+          const kx = k * (halfL / 2.5);
+          ctx.beginPath(); ctx.ellipse(kx, Math.sin(k) * 4, 6, 3, Math.PI / 4, 0, TAU); ctx.fill();
+        }
+        return;
+      }
+      case 'striped-plane':
+      case 'parallelogram':
+      case 'trapezoid': {
+        const s = l / 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -s);
+        ctx.quadraticCurveTo(w * 1.2, 0, 0, s);
+        ctx.quadraticCurveTo(-w * 1.2, 0, 0, -s);
+        ctx.closePath();
+        if (fill) ctx.fill(); else ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s * 0.8); ctx.lineTo(0, s * 0.8); ctx.stroke();
         return;
       }
     }
