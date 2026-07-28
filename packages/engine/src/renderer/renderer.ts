@@ -385,15 +385,33 @@ export class Renderer {
       }
     }
 
-    // 1b. Ambient Neon Backdrop Pulse (when Neon Night Club theme is active)
+    // 1b. Ambient Neon Backdrop Pulse & Synthwave Grid (when Neon Night Club theme is active)
     if (isNeonGlow) {
       const radGrad = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, Math.max(W, H) * 0.85);
-      radGrad.addColorStop(0, 'rgba(255, 0, 127, 0.25)');
-      radGrad.addColorStop(0.45, 'rgba(0, 240, 255, 0.15)');
-      radGrad.addColorStop(0.75, 'rgba(121, 40, 202, 0.10)');
+      radGrad.addColorStop(0, 'rgba(255, 0, 127, 0.32)');
+      radGrad.addColorStop(0.45, 'rgba(0, 240, 255, 0.18)');
+      radGrad.addColorStop(0.75, 'rgba(121, 40, 202, 0.12)');
       radGrad.addColorStop(1, 'rgba(10, 10, 22, 0)');
       ctx.fillStyle = radGrad;
       ctx.fillRect(0, 0, W, H);
+
+      // Perspective Cyber Synthwave Grid Floor Lines
+      ctx.save();
+      ctx.translate(W / 2 - camX, H / 2 - camY);
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.14)';
+      ctx.lineWidth = 1.2;
+      const gStep = 90;
+      const gx0 = Math.floor((camX - W) / gStep) * gStep;
+      const gy0 = Math.floor((camY - H) / gStep) * gStep;
+      ctx.beginPath();
+      for (let x = gx0; x <= camX + W * 1.5; x += gStep) {
+        ctx.moveTo(x, camY - H * 1.5); ctx.lineTo(x, camY + H * 1.5);
+      }
+      for (let y = gy0; y <= camY + H * 1.5; y += gStep) {
+        ctx.moveTo(camX - W * 1.5, y); ctx.lineTo(camX + W * 1.5, y);
+      }
+      ctx.stroke();
+      ctx.restore();
     }
 
     // 2. Far architecture (parallax)
@@ -413,7 +431,7 @@ export class Renderer {
         const arr = farChunks.get(cx + ',' + cy) || [];
         for (const f of arr) {
           ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot);
-          drawFar(ctx, f.kind, f.size);
+          drawFar(ctx, f.kind, f.size, isNeonGlow);
           ctx.restore();
         }
       }

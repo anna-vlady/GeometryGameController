@@ -292,6 +292,37 @@ export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string
   const color = inkCol || 'rgba(30,27,22,0.28)';
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
+  if (inkCol) {
+    ctx.shadowColor = '#00F0FF';
+    ctx.shadowBlur = 10;
+    switch (d.kind) {
+      case 'cross': // Floating Musical Eighth Note ♪
+        ctx.font = `${Math.max(14, d.size)}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('♪', 0, 0);
+        break;
+      case 'arc': // Glowing Star Sparkle ✦
+        ctx.font = `${Math.max(16, d.size * 1.1)}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('✦', 0, 0);
+        break;
+      case 'outline': // Equalizer Spectrum Bars
+        ctx.lineWidth = 2;
+        for (let b = -2; b <= 2; b++) {
+          const bh = (d.size * 0.7) * (0.3 + Math.abs(Math.sin(b * 1.5 + d.x)) * 0.7);
+          ctx.fillRect(b * 6 - 2, -bh / 2, 4, bh);
+        }
+        break;
+      case 'dots': // Glowing Energy Droplet Cluster
+        for (let i = 0; i < 4; i++) {
+          ctx.beginPath(); ctx.arc(i * 12 - 18, 0, 3.5, 0, TAU); ctx.fill();
+        }
+        break;
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    return;
+  }
   switch (d.kind) {
     case 'cross':
       ctx.fillRect(-d.size / 2, -3, d.size, 6);
@@ -314,8 +345,34 @@ export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string
   ctx.restore();
 }
 
-export function drawFar(ctx: CanvasRenderingContext2D, kind: number, s: number) {
+export function drawFar(ctx: CanvasRenderingContext2D, kind: number, s: number, isNeonGlow?: boolean) {
   ctx.lineWidth = 2;
+  if (isNeonGlow) {
+    switch (kind) {
+      case 0: { // Equalizer Skyscraper
+        const bars = 7;
+        const bw = s / bars;
+        for (let b = 0; b < bars; b++) {
+          const bh = (s * 0.8) * (0.3 + Math.abs(Math.sin(b * 1.8)) * 0.7);
+          ctx.fillRect(-s / 2 + b * bw, s / 2 - bh, bw * 0.8, bh);
+        }
+        break;
+      }
+      case 1: { // Vinyl Record Deck Outline
+        ctx.beginPath(); ctx.arc(0, 0, s / 2, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, s / 4, 0, TAU); ctx.stroke();
+        break;
+      }
+      case 2: { // Laser Grid Pyramid
+        ctx.beginPath();
+        ctx.moveTo(0, -s / 2); ctx.lineTo(s / 2, s / 2); ctx.lineTo(-s / 2, s / 2);
+        ctx.closePath(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s / 2); ctx.lineTo(0, s / 2); ctx.stroke();
+        break;
+      }
+    }
+    return;
+  }
   switch (kind) {
     case 0: ctx.strokeRect(-s / 2, -s / 3, s, s * 0.66); break;
     case 1: ctx.beginPath(); ctx.arc(0, 0, s / 2, 0, TAU); ctx.stroke(); break;
