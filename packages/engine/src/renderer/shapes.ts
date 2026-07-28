@@ -196,23 +196,33 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
         ctx.beginPath(); ctx.arc(-l * 0.2, -w / 2 - 3, 3, 0, TAU); ctx.fill();
         return;
       }
-      case 'disc': {
+      case 'disc': { // Forest Mushroom / Toadstool Cap 🍄
         const r = l / 2;
-        ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+        ctx.beginPath();
+        ctx.arc(0, -r * 0.1, r, Math.PI, 0);
+        ctx.quadraticCurveTo(0, r * 0.4, -r, 0);
+        ctx.closePath();
         if (fill) ctx.fill(); else ctx.stroke();
-        for (let p = 0; p < 8; p++) {
-          const a = p * (TAU / 8);
-          const px = Math.cos(a) * r * 0.85, py = Math.sin(a) * r * 0.85;
-          ctx.beginPath(); ctx.arc(px, py, r * 0.22, 0, TAU); ctx.stroke();
-        }
+        ctx.fillStyle = '#FAF0E6';
+        ctx.beginPath(); ctx.arc(-r * 0.4, -r * 0.4, r * 0.18, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(r * 0.3, -r * 0.5, r * 0.22, 0, TAU); ctx.fill();
+        ctx.beginPath(); ctx.arc(0, -r * 0.7, r * 0.16, 0, TAU); ctx.fill();
         return;
       }
-      case 'ring-disc': {
+      case 'ring-disc': { // Layered Water Lily Petal Blossom 🪷
         const r = l / 2;
-        ctx.lineWidth = 1.6;
-        for (let k = 1; k <= 3; k++) {
-          ctx.beginPath(); ctx.arc(0, 0, (r * k) / 3, 0, TAU); ctx.stroke();
+        ctx.lineWidth = 1.8;
+        for (let layer = 1; layer <= 3; layer++) {
+          const lr = (r * layer) / 3;
+          ctx.beginPath();
+          for (let p = 0; p < 8; p++) {
+            const a = p * (TAU / 8);
+            const px = Math.cos(a) * lr, py = Math.sin(a) * lr;
+            ctx.arc(px * 0.6, py * 0.6, lr * 0.38, 0, TAU);
+          }
+          ctx.stroke();
         }
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.18, 0, TAU); ctx.fill();
         return;
       }
       case 'wedge': {
