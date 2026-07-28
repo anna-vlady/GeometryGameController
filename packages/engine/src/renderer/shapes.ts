@@ -125,14 +125,24 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number, i
 export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string, isNeonGlow?: boolean, levelId?: number) {
   ctx.fillStyle = col; ctx.strokeStyle = col;
   if (levelId === 3) {
-    if (dur >= 3) {
-      ctx.beginPath(); ctx.arc(0, 0, 7.5, 0, TAU); ctx.fill(); ctx.stroke();
-    } else if (dur === 2) {
-      ctx.beginPath(); ctx.ellipse(0, 0, 7, 4, Math.PI / 4, 0, TAU); ctx.fill();
-    } else if (dur === 1.5) {
-      ctx.fillRect(-7, -2, 14, 4);
-    } else {
-      ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+    if (dur >= 3) { // Sakura Blossom Petal
+      ctx.beginPath();
+      ctx.moveTo(0, -7);
+      ctx.quadraticCurveTo(6, -2, 4, 6);
+      ctx.lineTo(0, 4);
+      ctx.lineTo(-4, 6);
+      ctx.quadraticCurveTo(-6, -2, 0, -7);
+      ctx.closePath(); ctx.fill();
+    } else if (dur === 2) { // Teardrop Leaf
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 6, 3.5, Math.PI / 4, 0, TAU); ctx.fill();
+    } else if (dur === 1.5) { // Small Clover Petal
+      ctx.beginPath();
+      ctx.arc(-2.5, -1, 3, 0, TAU); ctx.arc(2.5, -1, 3, 0, TAU); ctx.arc(0, 2.5, 3, 0, TAU);
+      ctx.fill();
+    } else { // Tiny Willow Leaf Petal (replaces plain small circle dots!)
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 4.5, 2.2, Math.PI / 4, 0, TAU); ctx.fill();
     }
     return;
   }

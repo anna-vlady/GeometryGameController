@@ -660,7 +660,11 @@ export class Renderer {
             const p = o.parts[pi];
             const fade = Math.min(1, p.life * 1.5);
             ctx.globalAlpha = 0.75 * fade;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, TAU); ctx.fill();
+            if (activeLevelConfig.id === 3) {
+              ctx.beginPath(); ctx.ellipse(p.x, p.y, 3.8, 2.0, Math.PI / 4, 0, TAU); ctx.fill();
+            } else {
+              ctx.beginPath(); ctx.arc(p.x, p.y, 2.4, 0, TAU); ctx.fill();
+            }
             ctx.globalAlpha = 0.28 * fade;
             ctx.lineWidth = 1;
             ctx.beginPath();
