@@ -2,20 +2,20 @@ import { LevelConfig } from './levelConfig';
 
 export const LEVEL_5_CONFIG: LevelConfig = {
   id: 5,
-  name: 'Уровень 5: Unicode Art Matrix',
-  artist: 'Unicode Matrix',
-  usePrimitives: false,
+  name: 'Уровень 5: Примитивы (Художник 4)',
+  artist: 'Художник 4',
+  usePrimitives: true,
   targetAltitude: 5165,
   palette: {
-    paper: '#0A0E1A',
-    ink: '#00F3FF',
-    red: '#FF0055',
-    ochre: '#FFD700',
-    blue: '#00F3FF',
-    cream: '#131A2D',
-    paperLight: [16, 24, 40],
-    paperDark: [10, 14, 26],
-    energyColors: ['#FF0055', '#00F3FF', '#FFD700', '#BD00FF']
+    paper: '#022C22',
+    ink: '#F0FDF4',
+    red: '#F43F5E',
+    ochre: '#FACC15',
+    blue: '#38BDF8',
+    cream: '#064E3B',
+    paperLight: [10, 60, 45],
+    paperDark: [2, 35, 25],
+    energyColors: ['#F43F5E', '#F0FDF4', '#FACC15', '#38BDF8']
   },
   audio: {
     rootNote: 55.0, // A1
@@ -28,5 +28,5 @@ export const LEVEL_5_CONFIG: LevelConfig = {
     drive: [2.2, 1.7, 2.1, 1.4]
   },
   assetsDir: '/assets/levels/level-5/',
-  description: 'Пятый уровень. Футуристическая матрица символов Unicode Art.'
+  description: 'Пятый уровень. Мод от Художника 4.'
 };

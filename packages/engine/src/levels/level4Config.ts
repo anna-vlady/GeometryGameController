@@ -2,20 +2,20 @@ import { LevelConfig } from './levelConfig';
 
 export const LEVEL_4_CONFIG: LevelConfig = {
   id: 4,
-  name: 'Уровень 4: ASCII Art Terminal',
-  artist: 'ASCII Terminal',
+  name: 'Уровень 4: ASCII Aquarium Tank',
+  artist: 'ASCII Aquarium',
   usePrimitives: false,
   targetAltitude: 5165,
   palette: {
-    paper: '#0D1117',
-    ink: '#00FF66',
-    red: '#FF5555',
-    ochre: '#FFB000',
-    blue: '#50FA7B',
-    cream: '#161B22',
-    paperLight: [20, 28, 38],
-    paperDark: [13, 17, 23],
-    energyColors: ['#FF5555', '#50FA7B', '#FFB000', '#BD93F9']
+    paper: '#04101A',
+    ink: '#00F0FF',
+    red: '#FF4081',
+    ochre: '#FFD700',
+    blue: '#00E5FF',
+    cream: '#0B2236',
+    paperLight: [10, 30, 50],
+    paperDark: [4, 16, 26],
+    energyColors: ['#FF4081', '#00E5FF', '#FFD700', '#B388FF']
   },
   audio: {
     rootNote: 32.703, // C1
@@ -28,5 +28,5 @@ export const LEVEL_4_CONFIG: LevelConfig = {
     drive: [1.6, 1.4, 1.9, 1.3]
   },
   assetsDir: '/assets/levels/level-4/',
-  description: 'Четвёртый уровень. Винтажная терминальная эстетика ASCII Art.'
+  description: 'Четвёртый уровень. Аквариумный мир рыбок и кораллов ASCII Fish Art.'
 };
