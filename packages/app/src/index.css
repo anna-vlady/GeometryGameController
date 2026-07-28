@@ -163,3 +163,22 @@ h1, h2, h3, p { margin: 0; }
 .proun-panel-close {
   background: none; border: none; cursor: pointer; color: var(--ink); font-size: 14px;
 }
+
+/* ── Электрическое неоновое свечение (Neon Glow Mod) ── */
+.proun-neon-glow {
+  text-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+}
+
+.proun-neon-box-glow {
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(255, 0, 127, 0.2);
+}
+
+@keyframes neon-pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px #FF007F) drop-shadow(0 0 16px #00F0FF);
+  }
+  50% {
+    filter: drop-shadow(0 0 14px #FF007F) drop-shadow(0 0 24px #FFE600);
+  }
+}
+

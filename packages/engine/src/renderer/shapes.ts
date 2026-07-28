@@ -146,12 +146,13 @@ export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean
   }
 }
 
-export function drawDecor(ctx: CanvasRenderingContext2D, d: any) {
+export function drawDecor(ctx: CanvasRenderingContext2D, d: any, inkCol?: string) {
   ctx.save();
   ctx.translate(d.x, d.y);
   ctx.rotate(d.rot);
-  ctx.fillStyle = 'rgba(30,27,22,0.28)';
-  ctx.strokeStyle = 'rgba(30,27,22,0.28)';
+  const color = inkCol || 'rgba(30,27,22,0.28)';
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
   switch (d.kind) {
     case 'cross':
       ctx.fillRect(-d.size / 2, -3, d.size, 6);

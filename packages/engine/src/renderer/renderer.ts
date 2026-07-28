@@ -54,10 +54,17 @@ export class Renderer {
     this.grainPattern = pattern;
   }
 
+  get pal() { return levelRegistry.getActiveConfig().palette; }
+  get ink() { return this.pal.ink || INK; }
+  get red() { return this.pal.red || RED; }
+  get cream() { return this.pal.cream || CREAM; }
+  get energyColors() { return this.pal.energyColors || ENERGY_COLOR; }
+
   drawProunEl(o: Mech, el: any, t: number, px: number, py: number) {
     const ctx = this.ctx;
-    const c = ENERGY_COLOR[o.energy || 0];
-    const col = el.col === 0 ? c : INK;
+    const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
+    const c = this.energyColors[o.energy || 0];
+    const col = el.col === 0 ? c : this.ink;
     const ax = Math.cos(o.axis || 0), ay = Math.sin(o.axis || 0);
     const nx = -ay, ny = ax;
     
@@ -81,10 +88,15 @@ export class Renderer {
     ctx.rotate(rot);
     ctx.scale(sc, sc);
 
+    if (isNeonGlow) {
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 12;
+    }
+
     ctx.save();
     ctx.translate((5 + el.depth * 11) * 0.6, 5 + el.depth * 11);
     ctx.globalAlpha = 0.12;
-    ctx.fillStyle = INK; ctx.strokeStyle = INK;
+    ctx.fillStyle = this.ink; ctx.strokeStyle = this.ink;
     prounShape(ctx, el, true);
     ctx.restore();
 
@@ -93,7 +105,7 @@ export class Renderer {
     prounShape(ctx, el, el.kind !== 'needle');
 
     if (el.kind === 'plane') {
-      ctx.globalAlpha = 0.5; ctx.strokeStyle = INK; ctx.lineWidth = 1.3;
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = this.ink; ctx.lineWidth = 1.3;
       ctx.strokeRect(-el.len / 2 - 6, -el.wid / 2 + 6, el.len, el.wid);
       ctx.globalAlpha = 1;
     }
@@ -109,7 +121,7 @@ export class Renderer {
 
   drawMechCore(o: Mech) {
     const ctx = this.ctx;
-    const c = ENERGY_COLOR[o.energy || 0];
+    const c = this.energyColors[o.energy || 0];
     ctx.save();
     ctx.rotate(o.coreRot);
     const sc = 1 + o.corePulse * 0.1;
@@ -119,7 +131,7 @@ export class Renderer {
     switch (o.energy) {
       case 0:
         shadowAnd(ctx, () => ctx.fillRect(-cs / 2, -cs * 0.4, cs, cs * 0.8));
-        ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = this.ink; ctx.lineWidth = 1.5;
         ctx.strokeRect(-cs / 2 - 7, -cs * 0.4 + 7, cs, cs * 0.8);
         break;
       case 1:
@@ -150,7 +162,7 @@ export class Renderer {
 
   drawOrbitalBody(o: Mech, T: number, t: number, player: Player) {
     const ctx = this.ctx;
-    const c = ENERGY_COLOR[o.energy || 0];
+    const c = this.energyColors[o.energy || 0];
     const px = player.x - o.x, py = player.y - o.y;
     
     for (const ring of o.rings) {
@@ -162,7 +174,7 @@ export class Renderer {
         return [ex * ct - ey * st, ex * st + ey * ct];
       };
 
-      ctx.strokeStyle = INK;
+      ctx.strokeStyle = this.ink;
       ctx.globalAlpha = 0.15;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
@@ -186,7 +198,7 @@ export class Renderer {
         ctx.translate(bx, by);
         ctx.rotate(a + (ring.tilt || 0) + Math.PI / 2);
         ctx.globalAlpha = i === 0 ? 0.95 : 0.7;
-        drawBead(ctx, ring.talea[i], i === 0 ? c : INK);
+        drawBead(ctx, ring.talea[i], i === 0 ? c : this.ink);
         if (ring.flash[i] > 0.03) {
           ctx.strokeStyle = c;
           ctx.globalAlpha = ring.flash[i] * 0.8;
@@ -222,14 +234,14 @@ export class Renderer {
   drawProunBody(o: Mech, T: number, t: number, player: Player) {
     const ctx = this.ctx;
     const px = player.x - o.x, py = player.y - o.y;
-    ctx.strokeStyle = INK; ctx.globalAlpha = 0.07; ctx.lineWidth = 1;
+    ctx.strokeStyle = this.ink; ctx.globalAlpha = 0.07; ctx.lineWidth = 1;
     const ax = Math.cos(o.axis || 0), ay = Math.sin(o.axis || 0), L = o.outerR * 0.95;
     ctx.beginPath(); ctx.moveTo(-ax * L, -ay * L); ctx.lineTo(ax * L, ay * L); ctx.stroke();
     ctx.globalAlpha = 1;
 
     for (const fr of o.frames || []) {
       ctx.save(); ctx.translate(fr.bx, fr.by); ctx.rotate(fr.rot);
-      ctx.strokeStyle = INK; ctx.globalAlpha = 0.13; ctx.lineWidth = 1.4;
+      ctx.strokeStyle = this.ink; ctx.globalAlpha = 0.13; ctx.lineWidth = 1.4;
       ctx.strokeRect(-fr.w / 2, -fr.h / 2, fr.w, fr.h);
       ctx.restore();
     }
@@ -240,8 +252,8 @@ export class Renderer {
 
     const pv = 3.5 + o.corePulse * 3;
     ctx.beginPath(); ctx.arc(0, 0, pv, 0, TAU);
-    ctx.fillStyle = CREAM; ctx.fill();
-    ctx.lineWidth = 1.5; ctx.strokeStyle = INK; ctx.stroke();
+    ctx.fillStyle = this.cream; ctx.fill();
+    ctx.lineWidth = 1.5; ctx.strokeStyle = this.ink; ctx.stroke();
   }
 
   drawMech(o: Mech, T: number, t: number, player: Player, dominant: Mech | null) {
@@ -294,6 +306,7 @@ export class Renderer {
 
     const activeLevelConfig = levelRegistry.getActiveConfig();
     const pal = activeLevelConfig.palette;
+    const isNeonGlow = activeLevelConfig.id === 2 || pal.paper === '#0A0A16';
 
     // 1. Screen-space paper/primitive background
     if (activeLevelConfig.usePrimitives) {
@@ -315,11 +328,25 @@ export class Renderer {
       }
     }
 
+    // 1b. Ambient Neon Backdrop Pulse (when Neon Night Club theme is active)
+    if (isNeonGlow) {
+      const radGrad = ctx.createRadialGradient(W / 2, H / 2, 40, W / 2, H / 2, Math.max(W, H) * 0.85);
+      radGrad.addColorStop(0, 'rgba(255, 0, 127, 0.25)');
+      radGrad.addColorStop(0.45, 'rgba(0, 240, 255, 0.15)');
+      radGrad.addColorStop(0.75, 'rgba(121, 40, 202, 0.10)');
+      radGrad.addColorStop(1, 'rgba(10, 10, 22, 0)');
+      ctx.fillStyle = radGrad;
+      ctx.fillRect(0, 0, W, H);
+    }
 
     // 2. Far architecture (parallax)
     ctx.save();
     ctx.translate(W / 2 - camX * FAR_FACTOR, H / 2 - camY * FAR_FACTOR);
-    ctx.strokeStyle = 'rgba(30,27,22,0.07)';
+    ctx.strokeStyle = isNeonGlow ? 'rgba(0, 240, 255, 0.35)' : 'rgba(30,27,22,0.07)';
+    if (isNeonGlow) {
+      ctx.shadowColor = '#00F0FF';
+      ctx.shadowBlur = 10;
+    }
     const fx0 = Math.floor((camX * FAR_FACTOR - W / 2) / FAR_CHUNK) - 1;
     const fx1 = Math.floor((camX * FAR_FACTOR + W / 2) / FAR_CHUNK) + 1;
     const fy0 = Math.floor((camY * FAR_FACTOR - H / 2) / FAR_CHUNK) - 1;
@@ -333,6 +360,9 @@ export class Renderer {
           ctx.restore();
         }
       }
+    }
+    if (isNeonGlow) {
+      ctx.shadowBlur = 0;
     }
     ctx.restore();
 
@@ -478,7 +508,7 @@ export class Renderer {
     for (let cy = y0; cy <= y1; cy++)
       for (let cx = x0; cx <= x1; cx++) {
         const ch = chunks.get(cx + ',' + cy);
-        if (ch) for (const d of ch.decor) drawDecor(ctx, d);
+        if (ch) for (const d of ch.decor) drawDecor(ctx, d, isNeonGlow ? 'rgba(0, 240, 255, 0.55)' : undefined);
       }
       
     for (let cy = y0; cy <= y1; cy++)
@@ -495,6 +525,10 @@ export class Renderer {
         for (const o of ch.mechs) {
           const col = ENERGY_COLOR[o.energy || 0];
           ctx.fillStyle = col; ctx.strokeStyle = col;
+          if (isNeonGlow) {
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 10;
+          }
           const activeN = Math.round(o.parts.length * particleFrac);
           for (let pi = 0; pi < activeN; pi++) {
             const p = o.parts[pi];
@@ -507,6 +541,9 @@ export class Renderer {
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p.x - p.vx * 0.08, p.y - p.vy * 0.08);
             ctx.stroke();
+          }
+          if (isNeonGlow) {
+            ctx.shadowBlur = 0;
           }
         }
       }
@@ -583,6 +620,10 @@ export class Renderer {
       for (const orb of p.orbs) {
         if (!orb.target || orb.score < 0.03) continue;
         ctx.strokeStyle = ENERGY_COLOR[orb.energy];
+        if (isNeonGlow) {
+          ctx.shadowColor = ENERGY_COLOR[orb.energy];
+          ctx.shadowBlur = 14;
+        }
         ctx.globalAlpha = orb.score * 0.75;
         ctx.lineWidth = 1.6;
         ctx.setLineDash([7, 7]);
@@ -593,12 +634,17 @@ export class Renderer {
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.globalAlpha = 1;
+        if (isNeonGlow) ctx.shadowBlur = 0;
       }
 
       // Trails
       for (const orb of p.orbs) {
         const n = orb.trail.length;
         ctx.strokeStyle = ENERGY_COLOR[orb.energy];
+        if (isNeonGlow) {
+          ctx.shadowColor = ENERGY_COLOR[orb.energy];
+          ctx.shadowBlur = 16;
+        }
         for (let j = 1; j < n; j++) {
           ctx.globalAlpha = (j / n) * 0.35;
           ctx.lineWidth = (j / n) * 3;
@@ -607,6 +653,7 @@ export class Renderer {
           ctx.lineTo(orb.trail[j].x, orb.trail[j].y);
           ctx.stroke();
         }
+        if (isNeonGlow) ctx.shadowBlur = 0;
       }
       ctx.globalAlpha = 1;
 
@@ -614,6 +661,10 @@ export class Renderer {
       if (slot.magnetTimer && slot.magnetTimer > 0) {
         ctx.save();
         ctx.strokeStyle = '#C99B3F';
+        if (isNeonGlow) {
+          ctx.shadowColor = '#FFE600';
+          ctx.shadowBlur = 20;
+        }
         ctx.lineWidth = 2.2;
         ctx.globalAlpha = 0.42 + Math.sin(t * 14) * 0.18;
         ctx.setLineDash([12, 8]);
@@ -625,9 +676,13 @@ export class Renderer {
       }
 
       // 1. Breathing Outer Signature Color Aura (Radius ~24px / Diameter 48px)
-      const slotColor = slot.color || ENERGY_COLOR[(slot.num - 1) % 4];
+      const slotColor = this.energyColors[(slot.num - 1) % 4];
       const auraR = 22 + Math.sin(t * 3.5 + slot.num) * 3;
       ctx.save();
+      if (isNeonGlow) {
+        ctx.shadowColor = slotColor;
+        ctx.shadowBlur = 18;
+      }
       ctx.beginPath();
       ctx.arc(p.x, p.y, auraR, 0, TAU);
       ctx.fillStyle = slotColor;
@@ -649,40 +704,40 @@ export class Renderer {
 
       const pType = (slot.num - 1) % 4;
       switch (pType) {
-        case 0: // Player 1: Red Winged Disc Emblem
+        case 0: // Player 1: Primary Energy Winged Disc Emblem
           shadowAnd(ctx, () => {
             // Crosswing stabilizers
-            ctx.fillStyle = INK;
+            ctx.fillStyle = this.ink;
             ctx.fillRect(-18, -3, 36, 6);
             ctx.fillRect(-3, -18, 6, 36);
-            // Main Red Circle
+            // Main Energy Circle
             ctx.beginPath(); ctx.arc(0, 0, 14, 0, TAU);
-            ctx.fillStyle = '#D84234'; ctx.fill();
-            ctx.lineWidth = 2.5; ctx.strokeStyle = CREAM; ctx.stroke();
-            // White Core Dot
+            ctx.fillStyle = this.energyColors[0]; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = this.cream; ctx.stroke();
+            // Core Accent Dot
             ctx.beginPath(); ctx.arc(0, 0, 5, 0, TAU);
-            ctx.fillStyle = CREAM; ctx.fill();
+            ctx.fillStyle = this.cream; ctx.fill();
           });
           break;
 
-        case 1: // Player 2: Black Double Diamond Crystal Emblem
+        case 1: // Player 2: Secondary Energy Double Diamond Crystal Emblem
           shadowAnd(ctx, () => {
             ctx.save(); ctx.rotate(Math.PI / 4);
             // Outer Diamond Frame
-            ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+            ctx.strokeStyle = this.ink; ctx.lineWidth = 2.5;
             ctx.strokeRect(-16, -16, 32, 32);
-            // Inner Solid Black Diamond
-            ctx.fillStyle = '#2B2D31'; ctx.fillRect(-12, -12, 24, 24);
-            ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(-12, -12, 24, 24);
-            // Core White Accent
-            ctx.fillStyle = CREAM; ctx.fillRect(-4, -4, 8, 8);
+            // Inner Solid Energy Diamond
+            ctx.fillStyle = this.energyColors[1]; ctx.fillRect(-12, -12, 24, 24);
+            ctx.strokeStyle = this.cream; ctx.lineWidth = 2; ctx.strokeRect(-12, -12, 24, 24);
+            // Core Accent
+            ctx.fillStyle = this.cream; ctx.fillRect(-4, -4, 8, 8);
             ctx.restore();
           });
           break;
 
-        case 2: // Player 3: Gold Triple Chevron Arrowhead Emblem
+        case 2: // Player 3: Tertiary Energy Triple Chevron Arrowhead Emblem
           shadowAnd(ctx, () => {
-            ctx.fillStyle = '#C99B3F'; ctx.strokeStyle = INK; ctx.lineWidth = 2;
+            ctx.fillStyle = this.energyColors[2]; ctx.strokeStyle = this.ink; ctx.lineWidth = 2;
             for (let step = 0; step < 3; step++) {
               const ox = step * 6 - 8;
               ctx.beginPath();
@@ -694,18 +749,18 @@ export class Renderer {
               ctx.fill(); ctx.stroke();
             }
             ctx.beginPath(); ctx.arc(4, 0, 4, 0, TAU);
-            ctx.fillStyle = CREAM; ctx.fill();
+            ctx.fillStyle = this.cream; ctx.fill();
           });
           break;
 
-        case 3: // Player 4: Steel-Blue Cross-Grid Shield Emblem
+        case 3: // Player 4: Quaternary Energy Cross-Grid Shield Emblem
         default:
           shadowAnd(ctx, () => {
-            ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
+            ctx.strokeStyle = this.ink; ctx.lineWidth = 2.5;
             ctx.beginPath(); ctx.arc(0, 0, 16, 0, TAU); ctx.stroke();
-            ctx.fillStyle = '#3F5666'; ctx.fillRect(-11, -11, 22, 22);
-            ctx.strokeStyle = CREAM; ctx.lineWidth = 2; ctx.strokeRect(-11, -11, 22, 22);
-            ctx.fillStyle = CREAM;
+            ctx.fillStyle = this.energyColors[3]; ctx.fillRect(-11, -11, 22, 22);
+            ctx.strokeStyle = this.cream; ctx.lineWidth = 2; ctx.strokeRect(-11, -11, 22, 22);
+            ctx.fillStyle = this.cream;
             ctx.fillRect(-8, -2, 16, 4);
             ctx.fillRect(-2, -8, 4, 16);
           });

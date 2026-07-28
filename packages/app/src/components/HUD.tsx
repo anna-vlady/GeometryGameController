@@ -68,52 +68,58 @@ export function HUD({ engine }: HUDProps) {
         gap: '8px',
         pointerEvents: 'auto'
       }}>
-        {engine.slots && engine.slots.map(s => (
-          <div key={s.slotId} style={{
-            background: s.active ? 'rgba(30,27,22,0.88)' : 'rgba(30,27,22,0.35)',
-            color: '#E7DFCC',
-            padding: '5px 12px',
-            borderRadius: '16px',
-            fontSize: '11px',
-            fontWeight: '900',
-            letterSpacing: '1px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-            opacity: s.active ? 1 : 0.6
-          }}>
-            <span style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: s.connected ? '#4CAF50' : s.color
-            }} />
-            <span>{s.name}</span>
-          </div>
-        ))}
+        {engine.slots && engine.slots.map(s => {
+          const slotColor = engine ? engine.getLevelConfig().palette.energyColors[(s.num - 1) % 4] : s.color;
+          return (
+            <div key={s.slotId} style={{
+              background: s.active ? 'rgba(30,27,22,0.88)' : 'rgba(30,27,22,0.35)',
+              color: '#E7DFCC',
+              padding: '5px 12px',
+              borderRadius: '16px',
+              fontSize: '11px',
+              fontWeight: '900',
+              letterSpacing: '1px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+              opacity: s.active ? 1 : 0.6
+            }}>
+              <span style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                backgroundColor: s.connected ? '#4CAF50' : slotColor
+              }} />
+              <span>{s.name}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Tanks for all active local players */}
       <div style={{ position: 'absolute', bottom: '26px', left: '26px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        {engine.slots && engine.slots.filter(s => s.active).map(s => (
-          <div key={s.slotId} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ fontSize: '10px', fontWeight: '900', color: s.color, width: '56px', letterSpacing: '1px' }}>
-              {s.name}
+        {engine.slots && engine.slots.filter(s => s.active).map(s => {
+          const slotColor = engine ? engine.getLevelConfig().palette.energyColors[(s.num - 1) % 4] : s.color;
+          return (
+            <div key={s.slotId} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ fontSize: '10px', fontWeight: '900', color: slotColor, width: '56px', letterSpacing: '1px' }}>
+                {s.name}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {s.tanks.map((fill, i) => (
+                  <div key={i} style={{ width: '8px', height: '36px', border: `1px solid ${s.color}`, position: 'relative', borderRadius: '1px' }}>
+                    <div style={{
+                      position: 'absolute', bottom: 1, left: 1, right: 1,
+                      height: `${(fill / 12) * 100}%`,
+                      backgroundColor: (engine ? engine.getLevelConfig().palette.energyColors : ['#BF3B2B', '#1E1B16', '#C99B3F', '#3F5666'])[i]
+                    }} />
+                  </div>
+                ))}
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {s.tanks.map((fill, i) => (
-                <div key={i} style={{ width: '8px', height: '36px', border: `1px solid ${s.color}`, position: 'relative', borderRadius: '1px' }}>
-                  <div style={{
-                    position: 'absolute', bottom: 1, left: 1, right: 1,
-                    height: `${(fill / 12) * 100}%`,
-                    backgroundColor: ['#BF3B2B', '#1E1B16', '#C99B3F', '#3F5666'][i]
-                  }} />
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Peer Pilot Co-op Compass */}
@@ -153,13 +159,13 @@ export function HUD({ engine }: HUDProps) {
           position: 'absolute',
           top: '70px',
           left: '26px',
-          color: engine.comboFeedback.includes('PON') ? '#C99B3F' : '#BF3B2B',
+          color: engine.comboFeedback.includes('PON') ? (engine ? engine.getLevelConfig().palette.ochre : '#C99B3F') : (engine ? engine.getLevelConfig().palette.red : '#BF3B2B'),
           fontSize: engine.comboFeedback.includes('REZONANCE') ? '16px' : '20px',
           fontWeight: '900',
           letterSpacing: '2px',
           padding: '6px 14px',
           background: 'rgba(242,235,217,0.92)',
-          border: '2px solid ' + (engine.comboFeedback.includes('PON') ? '#C99B3F' : '#BF3B2B'),
+          border: '2px solid ' + (engine.comboFeedback.includes('PON') ? (engine ? engine.getLevelConfig().palette.ochre : '#C99B3F') : (engine ? engine.getLevelConfig().palette.red : '#BF3B2B')),
           borderRadius: '6px',
           boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
           transition: 'all 0.1s ease-out',
@@ -183,7 +189,7 @@ export function HUD({ engine }: HUDProps) {
         pointerEvents: 'none'
       }}>
         {/* Top Label (Summit) */}
-        <div style={{ fontSize: '10px', fontWeight: '900', color: '#BF3B2B', letterSpacing: '1px' }}>
+        <div style={{ fontSize: '10px', fontWeight: '900', color: engine ? engine.getLevelConfig().palette.red : '#BF3B2B', letterSpacing: '1px' }}>
           {ALTITUDE_MAX}m
         </div>
 
@@ -203,11 +209,11 @@ export function HUD({ engine }: HUDProps) {
             left: '-6px',
             right: '-6px',
             height: '8px',
-            background: '#BF3B2B',
+            background: engine ? engine.getLevelConfig().palette.red : '#BF3B2B',
             borderRadius: '2px',
             bottom: `${Math.min(100, Math.max(0, (altitude / ALTITUDE_MAX) * 100))}%`,
             transform: 'translateY(50%)',
-            boxShadow: '0 2px 6px rgba(191,59,43,0.5)'
+            boxShadow: '0 2px 6px ' + (engine ? engine.getLevelConfig().palette.red : '#BF3B2B') + '80'
           }} />
         </div>
 

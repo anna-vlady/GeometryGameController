@@ -17,8 +17,10 @@ export function Game() {
     return () => mp.disconnect();
   }, [engine]);
 
+  const activePaper = engine ? engine.getLevelConfig().palette.paper : '#E7DFCC';
+
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', backgroundColor: '#E7DFCC' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', position: 'relative', backgroundColor: activePaper, transition: 'background-color 0.4s ease' }}>
       <canvas
         ref={canvasRef}
         style={{ width: '100%', height: '100%', display: 'block' }}
