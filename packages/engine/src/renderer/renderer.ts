@@ -97,12 +97,12 @@ export class Renderer {
     ctx.translate((5 + el.depth * 11) * 0.6, 5 + el.depth * 11);
     ctx.globalAlpha = 0.12;
     ctx.fillStyle = this.ink; ctx.strokeStyle = this.ink;
-    prounShape(ctx, el, true);
+    prounShape(ctx, el, true, isNeonGlow);
     ctx.restore();
 
     ctx.globalAlpha = 1;
     ctx.fillStyle = col; ctx.strokeStyle = col;
-    prounShape(ctx, el, el.kind !== 'needle');
+    prounShape(ctx, el, el.kind !== 'needle', isNeonGlow);
 
     if (el.kind === 'plane') {
       ctx.globalAlpha = 0.5; ctx.strokeStyle = this.ink; ctx.lineWidth = 1.3;
@@ -121,6 +121,7 @@ export class Renderer {
 
   drawMechCore(o: Mech) {
     const ctx = this.ctx;
+    const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
     const c = this.energyColors[o.energy || 0];
     ctx.save();
     ctx.rotate(o.coreRot);
@@ -128,6 +129,42 @@ export class Renderer {
     ctx.scale(sc, sc);
     ctx.fillStyle = c; ctx.strokeStyle = c;
     const cs = o.coreSize;
+    if (isNeonGlow) {
+      ctx.shadowColor = c;
+      ctx.shadowBlur = 16;
+      switch (o.energy) {
+        case 0:
+          ctx.beginPath();
+          for (let p = 0; p < 8; p++) {
+            const ang = p * (TAU / 8);
+            const pr = (p % 2 === 0) ? cs * 0.85 : cs * 0.4;
+            const px = Math.cos(ang) * pr, py = Math.sin(ang) * pr;
+            if (p === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+          }
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          break;
+        case 1:
+          ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.8, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.5, 0, TAU); ctx.stroke();
+          ctx.beginPath(); ctx.arc(0, 0, cs * 0.2, 0, TAU); ctx.fill();
+          break;
+        case 2:
+          ctx.beginPath();
+          ctx.moveTo(0, -cs * 0.85); ctx.lineTo(cs * 0.6, 0); ctx.lineTo(0, cs * 0.85); ctx.lineTo(-cs * 0.6, 0);
+          ctx.closePath(); ctx.fill(); ctx.stroke();
+          break;
+        case 3:
+          ctx.fillRect(-cs * 1.2, -cs * 0.25, cs * 2.4, cs * 0.5);
+          for (let i = -3; i <= 3; i++) {
+            ctx.fillRect(i * 6 - 1.5, -cs * 0.55, 3, cs * 0.25);
+          }
+          break;
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+      return;
+    }
     switch (o.energy) {
       case 0:
         shadowAnd(ctx, () => ctx.fillRect(-cs / 2, -cs * 0.4, cs, cs * 0.8));
@@ -196,9 +233,8 @@ export class Renderer {
         if (dd < 240 && dd > 1) { const m = (1 - dd / 240) * 12; bx += ddx / dd * m; by += ddy / dd * m; }
         ctx.save();
         ctx.translate(bx, by);
-        ctx.rotate(a + (ring.tilt || 0) + Math.PI / 2);
-        ctx.globalAlpha = i === 0 ? 0.95 : 0.7;
-        drawBead(ctx, ring.talea[i], i === 0 ? c : this.ink);
+        const isNeonGlow = levelRegistry.getActiveLevelId() === 2 || this.pal.paper === '#0A0A16';
+        drawBead(ctx, ring.talea[i], i === 0 ? c : this.ink, isNeonGlow);
         if (ring.flash[i] > 0.03) {
           ctx.strokeStyle = c;
           ctx.globalAlpha = ring.flash[i] * 0.8;

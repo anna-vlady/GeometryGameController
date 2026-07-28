@@ -30,8 +30,27 @@ export function drawGlyph(ctx: CanvasRenderingContext2D, i: number, s: number) {
   }
 }
 
-export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string) {
+export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string, isNeonGlow?: boolean) {
   ctx.fillStyle = col; ctx.strokeStyle = col;
+  if (isNeonGlow) {
+    if (dur >= 3) {
+      ctx.beginPath();
+      ctx.moveTo(0, -10); ctx.lineTo(8, 0); ctx.lineTo(0, 10); ctx.lineTo(-8, 0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (dur === 2) {
+      ctx.beginPath();
+      if ((ctx as any).roundRect) {
+        (ctx as any).roundRect(-6, -6, 12, 12, 4); ctx.fill();
+      } else {
+        ctx.fillRect(-6, -6, 12, 12);
+      }
+    } else if (dur === 1.5) {
+      ctx.fillRect(-8, -2, 16, 4);
+    } else {
+      ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, TAU); ctx.fill();
+    }
+    return;
+  }
   if (dur >= 3) {
     ctx.beginPath();
     ctx.moveTo(0, -9); ctx.lineTo(7.5, 6); ctx.lineTo(-7.5, 6);
@@ -45,8 +64,80 @@ export function drawBead(ctx: CanvasRenderingContext2D, dur: number, col: string
   }
 }
 
-export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean) {
+export function prounShape(ctx: CanvasRenderingContext2D, el: any, fill: boolean, isNeonGlow?: boolean) {
   const l = el.len || 30, w = el.wid || 10;
+  if (isNeonGlow) {
+    switch (el.kind) {
+      case 'plane':
+      case 'bar': {
+        const r = Math.min(l / 2, w / 2);
+        ctx.beginPath();
+        if ((ctx as any).roundRect) {
+          (ctx as any).roundRect(-l / 2, -w / 2, l, w, r);
+        } else {
+          ctx.rect(-l / 2, -w / 2, l, w);
+        }
+        if (fill) ctx.fill(); else ctx.stroke();
+        return;
+      }
+      case 'disc': {
+        const r = l / 2;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU);
+        if (fill) ctx.fill(); else ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.7, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.4, 0, TAU); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.15, 0, TAU); ctx.fill();
+        return;
+      }
+      case 'ring-disc': {
+        const r = l / 2;
+        for (let k = 1; k <= 3; k++) {
+          ctx.beginPath(); ctx.arc(0, 0, (r * k) / 3, 0, TAU);
+          ctx.lineWidth = 1.8; ctx.stroke();
+        }
+        if (fill) { ctx.beginPath(); ctx.arc(0, 0, r * 0.25, 0, TAU); ctx.fill(); }
+        return;
+      }
+      case 'wedge': {
+        const s = l / 2;
+        ctx.beginPath();
+        ctx.moveTo(0, -s * 1.3);
+        ctx.quadraticCurveTo(s * 1.2, 0, s * 0.9, s * 0.9);
+        ctx.lineTo(0, s * 0.4);
+        ctx.lineTo(-s * 0.9, s * 0.9);
+        ctx.quadraticCurveTo(-s * 1.2, 0, 0, -s * 1.3);
+        ctx.closePath();
+        if (fill) ctx.fill(); else ctx.stroke();
+        return;
+      }
+      case 'needle': {
+        ctx.lineWidth = Math.max(2, w);
+        ctx.beginPath();
+        const halfL = l / 2;
+        ctx.moveTo(-halfL, 0);
+        for (let x = -halfL; x <= halfL; x += 4) {
+          const y = Math.sin((x / halfL) * Math.PI * 2) * (w * 0.8);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.beginPath(); ctx.arc(halfL, 0, 4, 0, TAU); ctx.fill();
+        return;
+      }
+      case 'frame-box':
+      case 'grid-cross': {
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(-l / 2, -w / 2, l, w);
+        const bars = 5;
+        for (let b = 0; b < bars; b++) {
+          const bx = -l / 2 + ((b + 0.5) * l) / bars;
+          const bh = (w * 0.7) * (0.4 + Math.sin(b * 1.7) * 0.6);
+          ctx.fillRect(bx - 2, w / 2 - bh, 4, bh);
+        }
+        return;
+      }
+    }
+  }
+
   switch (el.kind) {
     case 'plane':
     case 'bar':
