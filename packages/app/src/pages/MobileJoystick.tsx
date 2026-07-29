@@ -384,7 +384,7 @@ export function MobileJoystick() {
           box-sizing: border-box;
         }
 
-        /* PORTRAIT MODE: Vertical orientation (Joystick top, status middle, buttons bottom) */
+        /* PORTRAIT MODE: Vertical orientation (Joystick top, status middle, stacked buttons bottom) */
         @media (orientation: portrait) {
           .controller-main {
             flex-direction: column;
@@ -393,11 +393,12 @@ export function MobileJoystick() {
             padding: 4px 0;
           }
           .joystick-base {
-            width: min(65vw, 240px, 32dvh) !important;
-            height: min(65vw, 240px, 32dvh) !important;
+            width: min(58vw, 210px, 26dvh) !important;
+            height: min(58vw, 210px, 26dvh) !important;
           }
           .status-badge-container {
-            gap: 8px !important;
+            flex-direction: row !important;
+            gap: 10px !important;
             padding: 0 12px;
             flex-shrink: 0;
           }
@@ -406,20 +407,20 @@ export function MobileJoystick() {
           }
           .action-buttons {
             display: flex;
-            flex-direction: row;
-            gap: 20px;
+            flex-direction: column !important;
+            gap: 12px !important;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
           }
           .action-btn {
-            width: min(28vw, 110px) !important;
-            height: min(28vw, 110px) !important;
-            font-size: 26px !important;
+            width: min(22vw, 90px) !important;
+            height: min(22vw, 90px) !important;
+            font-size: 24px !important;
           }
         }
 
-        /* LANDSCAPE MODE: Horizontal orientation (Joystick left, status middle, buttons right) */
+        /* LANDSCAPE MODE: Horizontal orientation (Joystick left, status middle, side-by-side buttons right) */
         @media (orientation: landscape) {
           .controller-main {
             flex-direction: row;
@@ -434,6 +435,7 @@ export function MobileJoystick() {
             max-height: 92vh !important;
           }
           .status-badge-container {
+            flex-direction: row !important;
             gap: 10px !important;
             padding: 0 12px;
           }
@@ -442,8 +444,8 @@ export function MobileJoystick() {
           }
           .action-buttons {
             display: flex;
-            flex-direction: row;
-            gap: 16px;
+            flex-direction: row !important;
+            gap: 16px !important;
             align-items: center;
           }
           .action-btn {
@@ -511,12 +513,13 @@ export function MobileJoystick() {
           </div>
         </div>
 
-        {/* Center: SLOT and ONLINE / OFFLINE Status Badge */}
+        {/* Center: SLOT button & Glowing LED Connection Indicator */}
         <div className="status-badge-container" style={{
           display: 'flex',
-          flexDirection: 'column',
+          flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          gap: '10px'
         }}>
           <button
             onClick={handleReturnToSlotSelect}
@@ -536,34 +539,25 @@ export function MobileJoystick() {
             ⚙ P{slotNum} · {roomName}
           </button>
 
-          <span style={{
-            fontSize: '11px',
-            fontWeight: 'bold',
-            padding: '5px 12px',
-            borderRadius: '14px',
-            background: connectionState === 'online'
-              ? 'rgba(76, 175, 80, 0.15)'
-              : connectionState === 'connecting'
-              ? 'rgba(255, 152, 0, 0.15)'
-              : 'rgba(216, 66, 52, 0.15)',
-            color: connectionState === 'online'
-              ? '#2E7D32'
-              : connectionState === 'connecting'
-              ? '#E65100'
-              : '#D84234',
-            border: '1px solid ' + (connectionState === 'online' ? '#4CAF50' : connectionState === 'connecting' ? '#FF9800' : '#D84234'),
-            textAlign: 'center',
-            whiteSpace: 'nowrap'
-          }}>
-            {connectionState === 'online'
-              ? '● ONLINE'
-              : connectionState === 'connecting'
-              ? '◌ ПОДКЛЮЧЕНИЕ...'
-              : '○ OFFLINE (ПОВТОР...)'}
-          </span>
+          {/* Status LED Dot (Green when connected, Red when disconnected) */}
+          <div
+            title={connectionState === 'online' ? 'Подключено' : connectionState === 'connecting' ? 'Подключение...' : 'Не подключено'}
+            style={{
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              backgroundColor: connectionState === 'online' ? '#4CAF50' : '#D84234',
+              boxShadow: connectionState === 'online'
+                ? '0 0 10px #4CAF50, 0 0 4px #4CAF50'
+                : '0 0 10px #D84234, 0 0 4px #D84234',
+              border: '2px solid #F9F7F1',
+              flexShrink: 0,
+              transition: 'background-color 0.3s ease, box-shadow 0.3s ease'
+            }}
+          />
         </div>
 
-        {/* Action Buttons A (PATA) and B (PON) */}
+        {/* Action Buttons A (PATA) and B (PON) - Stacked vertically in Portrait, side-by-side in Landscape */}
         <div className="action-buttons">
           {/* Button A - Red (PATA) */}
           <button
