@@ -58,15 +58,16 @@ export function HUD({ engine }: HUDProps) {
 
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-      {/* Connected Controllers Badges (SLOT 1–4) */}
+      {/* Connected Controllers Badges (SLOT 1–4) & Controller Launch Button */}
       <div style={{
         position: 'absolute',
         top: '20px',
-        left: '26px',
+        left: '260px',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
-        pointerEvents: 'auto'
+        pointerEvents: 'auto',
+        zIndex: 10
       }}>
         {engine.slots && engine.slots.map(s => {
           const slotColor = engine ? engine.getLevelConfig().palette.energyColors[(s.num - 1) % 4] : s.color;
@@ -95,6 +96,31 @@ export function HUD({ engine }: HUDProps) {
             </div>
           );
         })}
+
+        <button
+          onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
+          style={{
+            background: 'rgba(30,27,22,0.88)',
+            color: '#E7DFCC',
+            border: '1px solid rgba(255,255,255,0.25)',
+            padding: '5px 12px',
+            borderRadius: '16px',
+            fontSize: '11px',
+            fontWeight: '900',
+            letterSpacing: '1px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
+            cursor: 'pointer',
+            pointerEvents: 'auto',
+            transition: 'transform 0.1s ease, background-color 0.2s ease'
+          }}
+          title="Открыть джойстик в отдельном окне браузера"
+        >
+          <span>🕹</span>
+          <span>ОТКРЫТЬ ДЖОЙСТИК ↗</span>
+        </button>
       </div>
 
       {/* Tanks for all active local players */}

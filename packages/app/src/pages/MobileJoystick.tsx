@@ -393,8 +393,8 @@ export function MobileJoystick() {
             padding: 4px 0;
           }
           .joystick-base {
-            width: min(58vw, 210px, 26dvh) !important;
-            height: min(58vw, 210px, 26dvh) !important;
+            width: min(60vw, 220px, 26dvh) !important;
+            height: min(60vw, 220px, 26dvh) !important;
           }
           .status-badge-container {
             flex-direction: row !important;
@@ -414,9 +414,9 @@ export function MobileJoystick() {
             flex-shrink: 0;
           }
           .action-btn {
-            width: min(22vw, 90px) !important;
-            height: min(22vw, 90px) !important;
-            font-size: 24px !important;
+            width: min(28vw, 115px) !important;
+            height: min(28vw, 115px) !important;
+            font-size: 30px !important;
           }
         }
 
@@ -445,13 +445,13 @@ export function MobileJoystick() {
           .action-buttons {
             display: flex;
             flex-direction: row !important;
-            gap: 16px !important;
+            gap: 18px !important;
             align-items: center;
           }
           .action-btn {
-            width: 120px !important;
-            height: 120px !important;
-            font-size: 30px !important;
+            width: min(28vh, 138px) !important;
+            height: min(28vh, 138px) !important;
+            font-size: 34px !important;
           }
         }
       `}</style>

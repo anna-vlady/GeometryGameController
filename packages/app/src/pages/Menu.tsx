@@ -41,6 +41,29 @@ export function Menu() {
       <button className="start" onClick={() => navigate('/game')}>
         WASD — тяга · M — звук · R — заново · нажмите, чтобы начать
       </button>
+
+      <button
+        style={{
+          marginTop: '18px',
+          background: '#BF3B2B',
+          color: '#FFF',
+          border: 'none',
+          padding: '10px 20px',
+          borderRadius: '8px',
+          fontSize: '12px',
+          fontWeight: '900',
+          letterSpacing: '1px',
+          cursor: 'pointer',
+          boxShadow: '0 4px 14px rgba(191,59,43,0.3)',
+          transition: 'transform 0.1s ease'
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          window.open('/controller', '_blank', 'width=420,height=750,resizable=yes');
+        }}
+      >
+        🕹 ОТКРЫТЬ ДЖОЙСТИК В ОТДЕЛЬНОМ ОКНЕ ↗
+      </button>
     </div>
   );
 }

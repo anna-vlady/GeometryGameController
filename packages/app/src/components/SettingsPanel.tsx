@@ -146,6 +146,23 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
         >
           📱 Настройка Мобильного Джойстика
         </a>
+        <button
+          onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
+          style={{
+            width: '100%',
+            background: '#2B2D31',
+            color: '#FFF',
+            padding: '8px',
+            borderRadius: '6px',
+            fontWeight: 'bold',
+            fontSize: '12px',
+            border: 'none',
+            cursor: 'pointer',
+            marginTop: '6px'
+          }}
+        >
+          🕹 Открыть Джойстик в Отдельном Окне ↗
+        </button>
       </div>
 
       <div className="proun-panel-section">Звук</div>
