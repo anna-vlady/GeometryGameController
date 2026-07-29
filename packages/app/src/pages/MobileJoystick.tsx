@@ -18,6 +18,18 @@ export function MobileJoystick() {
 
   const roomName = customRoom ? customRoom.toUpperCase() : `SLOT-${selectedPlayer || 1}`;
 
+  // Ensure document body & root html background match controller color (#F9F7F1) edge-to-edge
+  useEffect(() => {
+    const origBodyBg = document.body.style.backgroundColor;
+    const origDocBg = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = '#F9F7F1';
+    document.documentElement.style.backgroundColor = '#F9F7F1';
+    return () => {
+      document.body.style.backgroundColor = origBodyBg;
+      document.documentElement.style.backgroundColor = origDocBg;
+    };
+  }, []);
+
   // Read URL params e.g. ?player=1 or ?room=SLOT-1
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -363,28 +375,96 @@ export function MobileJoystick() {
         </button>
       </header>
 
-      {/* Main Viewport: Full-Height Left Joystick, Center Slot/Status, Right Buttons */}
-      <main style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        width: '100%',
-        flex: 1,
-        margin: '0 auto',
-        maxHeight: 'calc(100dvh - 32px)'
-      }}>
-        {/* Left Column: Touch & Mouse Pointer Joystick (Themed in Player Color!) */}
+      <style>{`
+        .controller-main {
+          display: flex;
+          width: 100%;
+          flex: 1;
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+
+        /* PORTRAIT MODE: Vertical orientation (Joystick top, status middle, buttons bottom) */
+        @media (orientation: portrait) {
+          .controller-main {
+            flex-direction: column;
+            justify-content: space-evenly;
+            align-items: center;
+            padding: 4px 0;
+          }
+          .joystick-base {
+            width: min(65vw, 240px, 32dvh) !important;
+            height: min(65vw, 240px, 32dvh) !important;
+          }
+          .status-badge-container {
+            gap: 8px !important;
+            padding: 0 12px;
+            flex-shrink: 0;
+          }
+          .status-button {
+            padding: 8px 18px !important;
+          }
+          .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+          }
+          .action-btn {
+            width: min(28vw, 110px) !important;
+            height: min(28vw, 110px) !important;
+            font-size: 26px !important;
+          }
+        }
+
+        /* LANDSCAPE MODE: Horizontal orientation (Joystick left, status middle, buttons right) */
+        @media (orientation: landscape) {
+          .controller-main {
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            max-height: calc(100dvh - 32px);
+          }
+          .joystick-base {
+            width: min(calc(100dvh - 36px), 50vw) !important;
+            height: min(calc(100dvh - 36px), 50vw) !important;
+            max-width: 92vh !important;
+            max-height: 92vh !important;
+          }
+          .status-badge-container {
+            gap: 10px !important;
+            padding: 0 12px;
+          }
+          .status-button {
+            padding: 10px 20px !important;
+          }
+          .action-buttons {
+            display: flex;
+            flex-direction: row;
+            gap: 16px;
+            align-items: center;
+          }
+          .action-btn {
+            width: 120px !important;
+            height: 120px !important;
+            font-size: 30px !important;
+          }
+        }
+      `}</style>
+
+      {/* Main Viewport: Responsive (Vertical in Portrait, Horizontal in Landscape) */}
+      <main className="controller-main">
+        {/* Joystick Base */}
         <div
           ref={joystickBaseRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
+          className="joystick-base"
           style={{
-            height: 'min(calc(100dvh - 36px), 50vw)',
-            width: 'min(calc(100dvh - 36px), 50vw)',
-            maxHeight: '92vh',
-            maxWidth: '92vh',
             aspectRatio: '1 / 1',
             borderRadius: '50%',
             border: `6px solid ${theme.main}`,
@@ -431,22 +511,20 @@ export function MobileJoystick() {
           </div>
         </div>
 
-        {/* Center Column: SLOT and ONLINE / OFFLINE Status Badge (Absolute Center Width & Height) */}
-        <div style={{
+        {/* Center: SLOT and ONLINE / OFFLINE Status Badge */}
+        <div className="status-badge-container" style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px',
-          padding: '0 12px'
+          justifyContent: 'center'
         }}>
           <button
             onClick={handleReturnToSlotSelect}
+            className="status-button"
             style={{
               background: theme.main,
               color: theme.text,
               border: 'none',
-              padding: '10px 20px',
               borderRadius: '24px',
               fontSize: '13px',
               fontWeight: '900',
@@ -485,25 +563,27 @@ export function MobileJoystick() {
           </span>
         </div>
 
-        {/* Right Column: Action Buttons A (PATA) and B (PON) in a horizontal row */}
-        <div style={{ display: 'flex', flexDirection: 'row', gap: '16px', alignItems: 'center' }}>
+        {/* Action Buttons A (PATA) and B (PON) */}
+        <div className="action-buttons">
           {/* Button A - Red (PATA) */}
           <button
             onPointerDown={(e) => { e.preventDefault(); handleButtonTap('A'); }}
+            className="action-btn"
             style={{
-              width: '120px',
-              height: '120px',
               borderRadius: '50%',
               background: activeBtn === 'A' ? '#B53225' : '#D84234',
               color: '#FFF',
               border: 'none',
-              fontSize: '30px',
               fontWeight: '900',
               letterSpacing: '1px',
               boxShadow: '0 8px 24px rgba(216,66,52,0.45)',
               cursor: 'pointer',
               transform: activeBtn === 'A' ? 'scale(0.92)' : 'scale(1)',
-              transition: 'transform 0.08s ease'
+              transition: 'transform 0.08s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             A
@@ -513,20 +593,22 @@ export function MobileJoystick() {
           {/* Button B - Charcoal / Gold Accent (PON) */}
           <button
             onPointerDown={(e) => { e.preventDefault(); handleButtonTap('B'); }}
+            className="action-btn"
             style={{
-              width: '120px',
-              height: '120px',
               borderRadius: '50%',
               background: activeBtn === 'B' ? '#17181B' : '#2B2D31',
               color: '#F9F7F1',
               border: 'none',
-              fontSize: '30px',
               fontWeight: '900',
               letterSpacing: '1px',
               boxShadow: '0 8px 24px rgba(43,45,49,0.45)',
               cursor: 'pointer',
               transform: activeBtn === 'B' ? 'scale(0.92)' : 'scale(1)',
-              transition: 'transform 0.08s ease'
+              transition: 'transform 0.08s ease',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center'
             }}
           >
             B
