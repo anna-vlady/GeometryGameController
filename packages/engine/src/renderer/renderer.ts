@@ -442,9 +442,9 @@ export class Renderer {
         ctx.stroke();
         ctx.shadowBlur = 0;
       } else {
-        ctx.strokeStyle = this.ink;
-        ctx.globalAlpha = 0.15;
-        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = c;
+        ctx.globalAlpha = 0.38;
+        ctx.lineWidth = 1.6;
         ctx.beginPath();
         for (let a = 0; a <= 72; a++) {
           const ang = a / 72 * TAU;
@@ -533,12 +533,14 @@ export class Renderer {
     ctx.translate(o.x, o.y);
     const c = ENERGY_COLOR[o.energy || 0];
 
-    ctx.strokeStyle = INK; ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.05;
-    ctx.setLineDash([2, 7]);
-    ctx.beginPath(); ctx.arc(0, 0, o.R, 0, TAU); ctx.stroke();
-    ctx.globalAlpha = dominant === o ? 0.22 : 0.09;
     ctx.strokeStyle = c;
+    ctx.lineWidth = 1.4;
+    ctx.globalAlpha = dominant === o ? 0.35 : 0.18;
+    ctx.setLineDash([3, 6]);
+    ctx.beginPath(); ctx.arc(0, 0, o.R, 0, TAU); ctx.stroke();
+    ctx.globalAlpha = dominant === o ? 0.50 : 0.28;
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2.0;
     ctx.beginPath(); ctx.arc(0, 0, o.orbitR, 0, TAU); ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
