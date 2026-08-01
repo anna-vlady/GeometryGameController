@@ -33,8 +33,15 @@ if (typeof (globalThis as any).require === 'undefined') {
   (globalThis as any).require = createRequire(import.meta.url);
 }
 
+import path from 'node:path';
+
 // https://vite.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@proun/engine': path.resolve(__dirname, '../engine/src/index.ts')
+    }
+  },
   server: {
     host: '0.0.0.0',
     port: 5173,

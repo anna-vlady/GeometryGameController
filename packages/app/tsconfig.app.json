@@ -7,6 +7,10 @@
     "types": ["vite/client"],
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@proun/engine": ["../engine/src/index.ts"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
