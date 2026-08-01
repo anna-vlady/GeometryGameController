@@ -5,14 +5,14 @@ export function CornerQRCodes() {
   const STORAGE_HOST = 'proun_controller_host';
 
   const [controllerHost] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_HOST);
-    if (saved) return saved;
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-      if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `${window.location.protocol}//192.168.1.213:${window.location.port || '5173'}`;
+      if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        return window.location.origin;
       }
-      return window.location.origin;
+      const saved = localStorage.getItem(STORAGE_HOST);
+      if (saved) return saved;
+      return `${window.location.protocol}//192.168.1.213:${window.location.port || '5173'}`;
     }
     return 'http://192.168.1.213:5173';
   });
