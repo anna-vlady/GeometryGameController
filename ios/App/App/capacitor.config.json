@@ -1,0 +1,8 @@
+{
+	"appId": "com.slither.controller",
+	"appName": "Slither Controller",
+	"webDir": "www",
+	"packageClassList": [
+		"HapticsPlugin"
+	]
+}

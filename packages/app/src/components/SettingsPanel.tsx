@@ -72,98 +72,126 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
   return (
     <div className="proun-panel">
       <div className="proun-panel-head" onClick={() => setOpen(false)}>
-        <span>Регуляторы</span>
-        <span className="tog">▾</span>
-      </div>
+          <span>Регуляторы</span>
+          <span className="tog">▾</span>
+        </div>
 
-      <div className="proun-panel-section">Уровни &amp; Моды</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '6px' }}>
-        {[1, 2, 3, 4, 5].map((lvl) => (
-          <button
-            key={lvl}
-            style={{
-              background: activeLevel === lvl ? '#BF3B2B' : 'rgba(30,27,22,0.7)',
-              color: '#FFF',
-              padding: '6px 2px',
-              fontSize: '11px',
-              fontWeight: 'bold',
-              border: activeLevel === lvl ? '2px solid #FFF' : '1px solid rgba(255,255,255,0.2)',
-              borderRadius: '4px',
-              cursor: 'pointer'
-            }}
-            onClick={() => handleSelectLevel(lvl)}
-          >
-            Ур. {lvl}
-          </button>
-        ))}
-      </div>
-      <div style={{ marginBottom: '8px', fontSize: '10px', color: '#A09888', fontStyle: 'italic' }}>
-        {engine ? engine.getLevelConfig().name : `Уровень ${activeLevel}`}
-      </div>
-      <button
-        style={{
-          width: '100%',
-          background: usePrimitives ? '#C99B3F' : '#3F5666',
-          color: '#FFF',
-          padding: '8px',
-          borderRadius: '4px',
-          fontWeight: 'bold',
-          fontSize: '11px',
-          border: 'none',
-          cursor: 'pointer',
-          marginBottom: '12px'
-        }}
-        onClick={handleTogglePrimitives}
-      >
-        {usePrimitives ? '✦ Стиль: Чистые Примитивы' : '🎨 Стиль: Кастомное Оформление'}
-      </button>
-
-      <div className="proun-panel-section">Мир &amp; Джойстик</div>
-
-      <div className="proun-seed-row" style={{ marginBottom: '8px' }}>
-        <input
-          type="number"
-          value={seed}
-          onChange={(e) => setSeed(parseInt(e.target.value, 10) || 0)}
-        />
-        <button className="proun-btn" onClick={handleRegenerate}>Обновить</button>
-        <button className="proun-btn" onClick={handleRandomSeed}>Случайно</button>
-      </div>
-      <div style={{ marginBottom: '12px' }}>
-        <a
-          href="/controller-settings"
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            background: '#BF3B2B',
-            color: '#FFF',
-            padding: '8px',
-            borderRadius: '6px',
-            textDecoration: 'none',
-            fontWeight: 'bold',
-            fontSize: '12px'
-          }}
-        >
-          📱 Настройка Мобильного Джойстика
-        </a>
+        <div className="proun-panel-section">Уровни &amp; Моды</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '6px' }}>
+          {[1, 2, 3, 4, 5].map((lvl) => (
+            <button
+              key={lvl}
+              style={{
+                background: activeLevel === lvl ? '#BF3B2B' : 'rgba(30,27,22,0.7)',
+                color: '#FFF',
+                padding: '6px 2px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                border: activeLevel === lvl ? '2px solid #FFF' : '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+              onClick={() => handleSelectLevel(lvl)}
+            >
+              Ур. {lvl}
+            </button>
+          ))}
+        </div>
+        <div style={{ marginBottom: '8px', fontSize: '10px', color: '#A09888', fontStyle: 'italic' }}>
+          {engine ? engine.getLevelConfig().name : `Уровень ${activeLevel}`}
+        </div>
         <button
-          onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
           style={{
             width: '100%',
-            background: '#2B2D31',
+            background: usePrimitives ? '#C99B3F' : '#3F5666',
             color: '#FFF',
             padding: '8px',
-            borderRadius: '6px',
+            borderRadius: '4px',
             fontWeight: 'bold',
-            fontSize: '12px',
+            fontSize: '11px',
             border: 'none',
             cursor: 'pointer',
-            marginTop: '6px'
+            marginBottom: '12px'
           }}
+          onClick={handleTogglePrimitives}
         >
-          🕹 Открыть Джойстик в Отдельном Окне ↗
+          {usePrimitives ? '✦ Стиль: Чистые Примитивы' : '🎨 Стиль: Кастомное Оформление'}
         </button>
-      </div>
+
+        <div className="proun-panel-section">Настройка Wi-Fi для QR-кода</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Имя сети (SSID):</label>
+            <input
+              type="text"
+              defaultValue={localStorage.getItem('proun_wifi_ssid') || 'Proun-WiFi'}
+              onChange={(e) => {
+                localStorage.setItem('proun_wifi_ssid', e.target.value);
+                window.dispatchEvent(new Event('storage'));
+              }}
+              style={{ width: '100%', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(30,27,22,0.8)', color: '#FFF' }}
+            />
+          </div>
+          <div>
+            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Пароль Wi-Fi:</label>
+            <input
+              type="text"
+              defaultValue={localStorage.getItem('proun_wifi_pass') || ''}
+              onChange={(e) => {
+                localStorage.setItem('proun_wifi_pass', e.target.value);
+                window.dispatchEvent(new Event('storage'));
+              }}
+              placeholder="Пароль сети (если есть)"
+              style={{ width: '100%', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(30,27,22,0.8)', color: '#FFF' }}
+            />
+          </div>
+        </div>
+
+        <div className="proun-panel-section">Мир &amp; Джойстик</div>
+
+        <div className="proun-seed-row" style={{ marginBottom: '8px' }}>
+          <input
+            type="number"
+            value={seed}
+            onChange={(e) => setSeed(parseInt(e.target.value, 10) || 0)}
+          />
+          <button className="proun-btn" onClick={handleRegenerate}>Обновить</button>
+          <button className="proun-btn" onClick={handleRandomSeed}>Случайно</button>
+        </div>
+        <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <a
+            href="/controller-settings"
+            style={{
+              display: 'block',
+              textAlign: 'center',
+              background: '#BF3B2B',
+              color: '#FFF',
+              padding: '8px',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              fontSize: '12px'
+            }}
+          >
+            📱 Настройка Мобильного Джойстика
+          </a>
+          <button
+            onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
+            style={{
+              width: '100%',
+              background: '#2B2D31',
+              color: '#FFF',
+              padding: '8px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            🕹 Открыть Джойстик в Отдельном Окне ↗
+          </button>
+        </div>
 
       <div className="proun-panel-section">Звук</div>
       <div className="proun-ctl">
@@ -187,7 +215,6 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
           onChange={(e) => handleParticles(parseInt(e.target.value, 10))} />
       </div>
 
-      <div className="proun-panel-section">Гравитация &amp; физика</div>
       {Object.entries(params).map(([k, v]) => (
         <div key={k} className="proun-ctl">
           <label>{k} <b>{v.toFixed(k.includes('GRAV') && v > 100 ? 0 : 2)}</b></label>

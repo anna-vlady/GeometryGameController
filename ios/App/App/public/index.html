@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Minimal Controller</title>
+  
+  <!-- Standalone Mobile Web App Tags for iOS & Android -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Controller">
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Full Controller Viewport -->
+  <div id="controller-screen" class="controller-screen">
+
+    <!-- Top Header Bar -->
+    <header class="top-header">
+      <div class="header-left">
+        <button id="fullscreen-btn" class="icon-btn" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
+          <svg class="fs-icon expand" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>
+          <svg class="fs-icon compress hidden" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Lobby Room Code Entry -->
+      <div class="lobby-control">
+        <label for="room-input" class="lobby-label">LOBBY:</label>
+        <input type="text" id="room-input" class="room-input" value="A8F2" maxlength="6" spellcheck="false" autocomplete="off" placeholder="CODE">
+        <button id="join-btn" class="join-btn">JOIN</button>
+        <span id="status-indicator" class="status-badge connected">
+          <span class="status-dot"></span>
+          <span class="status-text">READY</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Active Play Surface -->
+    <main class="play-surface">
+
+      <!-- Left Side: 2D Vector Joystick Zone -->
+      <section class="joystick-zone">
+        <div id="joystick-container" class="joystick-container">
+          <!-- Compass Marks -->
+          <span class="mark mark-n">N</span>
+          <span class="mark mark-s">S</span>
+          <span class="mark mark-e">E</span>
+          <span class="mark mark-w">W</span>
+          <div class="tick tick-nw"></div>
+          <div class="tick tick-ne"></div>
+          <div class="tick tick-sw"></div>
+          <div class="tick tick-se"></div>
+
+          <!-- Outer Ring -->
+          <div class="joystick-ring"></div>
+
+          <!-- Draggable Thumbstick -->
+          <div id="joystick-thumb" class="joystick-thumb"></div>
+        </div>
+      </section>
+
+      <!-- Right Side: Staggered Diagonal Action Buttons (A & B) -->
+      <section class="buttons-zone">
+        <div class="staggered-cluster">
+          <!-- Button A: Lower-Left, Red Circle -->
+          <button id="btn-a" class="action-btn btn-a" aria-label="Button A">
+            <span class="btn-text">A</span>
+          </button>
+
+          <!-- Button B: Upper-Right, Dark Charcoal Circle -->
+          <button id="btn-b" class="action-btn btn-b" aria-label="Button B">
+            <span class="btn-text">B</span>
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- iOS PWA Tip Banner (Hidden by default, shown if iOS Safari limits native fullscreen) -->
+    <div id="ios-tip" class="ios-tip hidden">
+      <span>💡 For 100% full screen on iPhone: tap <strong>Share</strong> ➔ <strong>"Add to Home Screen"</strong></span>
+      <button id="close-tip" class="tip-close">✕</button>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

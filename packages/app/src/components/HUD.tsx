@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ProunEngine, SPAWN, ALTITUDE_MAX } from '@proun/engine';
+import { CornerQRCodes } from './CornerQRCodes';
 
 interface HUDProps {
   engine: ProunEngine | null;
@@ -58,6 +59,9 @@ export function HUD({ engine }: HUDProps) {
 
   return (
     <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+      {/* Permanent Corner QR Codes (Wi-Fi & Controller) */}
+      <CornerQRCodes />
+
       {/* Connected Controllers Badges (SLOT 1–4) & Controller Launch Button */}
       <div style={{
         position: 'absolute',

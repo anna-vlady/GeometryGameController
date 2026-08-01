@@ -1,0 +1,381 @@
+/* ==========================================================================
+   2D FLAT MINIMALIST DIGITAL SCREEN CONTROLLER
+   Option 1 Aesthetic: Clean Vector UI on Warm Bone Canvas
+   ========================================================================== */
+
+:root {
+  --bg-color: #F9F7F1;
+  --text-dark: #2B2D31;
+  --text-muted: #8C8A82;
+  
+  --ring-color: #E5E2D8;
+  --tick-color: #D3D0C5;
+
+  --btn-red: #D84234;
+  --btn-red-active: #B53225;
+  --btn-charcoal: #2B2D31;
+  --btn-charcoal-active: #17181B;
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Reset & Touch Setup */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  font-family: var(--font-main);
+  color: var(--text-dark);
+  touch-action: none;
+}
+
+/* Screen Wrapper */
+.controller-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  padding: 1.25rem 1.75rem;
+  background-color: var(--bg-color);
+  position: relative;
+}
+
+/* CSS Edge-to-Edge Fullscreen Fallback */
+.controller-screen.fullscreen-active {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  z-index: 9999;
+  padding: 0.75rem 1.25rem;
+}
+
+/* Top Header & Lobby Controls */
+.top-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  width: 100%;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--text-dark);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.fs-icon.hidden {
+  display: none;
+}
+
+/* Lobby Room Input System */
+.lobby-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 4px 8px 4px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--ring-color);
+}
+
+.lobby-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.room-input {
+  width: 65px;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-dark);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.join-btn {
+  background-color: var(--text-dark);
+  color: #FFF;
+  border: none;
+  outline: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+.join-btn:active {
+  transform: scale(0.92);
+  opacity: 0.85;
+}
+
+/* Status Indicator Badge */
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  margin-left: 4px;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #38A169;
+}
+
+.status-badge.connected .status-dot {
+  background-color: #38A169;
+}
+
+.status-badge.disconnected .status-dot {
+  background-color: #E53E3E;
+}
+
+/* Main Play Surface */
+.play-surface {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+}
+
+/* Joystick Zone */
+.joystick-zone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.joystick-container {
+  position: relative;
+  width: min(220px, 38vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.joystick-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ring-color);
+  background-color: rgba(229, 226, 216, 0.2);
+}
+
+/* Compass Labels */
+.mark {
+  position: absolute;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.mark-n { top: 10px; }
+.mark-s { bottom: 10px; }
+.mark-w { left: 14px; }
+.mark-e { right: 14px; }
+
+.tick {
+  position: absolute;
+  width: 6px;
+  height: 1.5px;
+  background-color: var(--tick-color);
+}
+
+.tick-nw { top: 25%; left: 25%; transform: rotate(45deg); }
+.tick-ne { top: 25%; right: 25%; transform: rotate(-45deg); }
+.tick-sw { bottom: 25%; left: 25%; transform: rotate(-45deg); }
+.tick-se { bottom: 25%; right: 25%; transform: rotate(45deg); }
+
+/* Draggable Flat Thumbstick */
+.joystick-thumb {
+  position: absolute;
+  width: 48%;
+  height: 48%;
+  border-radius: 50%;
+  background-color: var(--text-dark);
+  box-shadow: 0 4px 12px rgba(43, 45, 49, 0.15);
+  transition: transform 0.05s ease-out;
+  cursor: pointer;
+}
+
+/* Buttons Zone (Staggered Diagonal Layout) */
+.buttons-zone {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.staggered-cluster {
+  position: relative;
+  width: min(240px, 42vw);
+  height: min(180px, 35vw);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn {
+  position: absolute;
+  width: min(95px, 18vw);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.08s ease, background-color 0.1s ease, box-shadow 0.1s ease;
+  touch-action: manipulation;
+}
+
+/* Button A: Lower Left (Red) */
+.btn-a {
+  bottom: 0;
+  left: 10px;
+  background-color: var(--btn-red);
+  box-shadow: 0 6px 16px rgba(216, 66, 52, 0.25);
+}
+
+.btn-a:active, .btn-a.active-touch {
+  transform: scale(0.92);
+  background-color: var(--btn-red-active);
+  box-shadow: 0 2px 8px rgba(216, 66, 52, 0.2);
+}
+
+/* Button B: Upper Right (Dark Charcoal) */
+.btn-b {
+  top: 0;
+  right: 10px;
+  background-color: var(--btn-charcoal);
+  box-shadow: 0 6px 16px rgba(43, 45, 49, 0.25);
+}
+
+.btn-b:active, .btn-b.active-touch {
+  transform: scale(0.92);
+  background-color: var(--btn-charcoal-active);
+  box-shadow: 0 2px 8px rgba(43, 45, 49, 0.2);
+}
+
+.btn-text {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+/* iOS Tip Banner */
+.ios-tip {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #2B2D31;
+  color: #FFFFFF;
+  font-size: 0.75rem;
+  padding: 8px 14px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.ios-tip.hidden {
+  display: none;
+}
+
+.tip-close {
+  background: none;
+  border: none;
+  color: #FFF;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+/* Portrait vs Landscape Layout */
+@media (orientation: portrait) {
+  .controller-screen {
+    padding: 1.5rem 1.25rem;
+  }
+  .play-surface {
+    flex-direction: column;
+    justify-content: space-around;
+    padding: 1rem 0;
+  }
+  .joystick-container {
+    width: min(220px, 60vw);
+  }
+  .staggered-cluster {
+    width: min(240px, 70vw);
+    height: min(160px, 45vw);
+  }
+  .action-btn {
+    width: min(90px, 24vw);
+  }
+}
+
+@media (orientation: landscape) {
+  .play-surface {
+    flex-direction: row;
+  }
+}

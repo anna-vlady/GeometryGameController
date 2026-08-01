@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run build --workspace=@proun/engine && npm run dev --workspace=app",
+    "dev": "npm run build --workspace=@proun/engine && node packages/server/src/index.js & npm run dev --workspace=app",
     "build": "npm run build --workspace=@proun/engine && npm run build --workspace=app"
   },
   "overrides": {
