@@ -102,7 +102,7 @@ export function HUD({ engine }: HUDProps) {
         })}
 
         <button
-          onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
+          onClick={() => window.open('/controller?player=1', '_blank', 'width=420,height=750,resizable=yes')}
           style={{
             background: 'rgba(30,27,22,0.88)',
             color: '#E7DFCC',

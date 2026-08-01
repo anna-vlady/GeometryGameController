@@ -4,8 +4,6 @@ import { HUD } from '../components/HUD';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { MultiplayerClient } from '../network/multiplayer';
 
-import { DebugOverlay } from '../components/DebugOverlay';
-
 export function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engine = useEngine(canvasRef);
@@ -33,7 +31,6 @@ export function Game() {
       {/* HUD Container */}
       <HUD engine={engine} />
       <SettingsPanel engine={engine} />
-      <DebugOverlay />
     </div>
   );
 }
