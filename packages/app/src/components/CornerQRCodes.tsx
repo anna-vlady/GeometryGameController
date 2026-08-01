@@ -18,7 +18,7 @@ export function CornerQRCodes() {
   });
 
   // Auto-join player 1 when scanning QR code
-  const controllerUrl = `${controllerHost.replace(/\/$/, '')}/controller?player=1`;
+  const controllerUrl = `${controllerHost.replace(/\/$/, '')}/#/controller?player=1`;
 
   return (
     <div
