@@ -54,9 +54,8 @@ export function MobileJoystick() {
       if (isCleanedUp) return;
 
       const hostname = window.location.hostname || 'localhost';
-      const defaultWs = window.location.protocol === 'https:'
-        ? `wss://${hostname}`
-        : `ws://${hostname}:8085`;
+      const isRemoteHost = hostname !== 'localhost' && hostname !== '127.0.0.1';
+      const defaultWs = isRemoteHost ? 'wss://geometrygamecontroller.onrender.com' : 'ws://localhost:8085';
       const wsUrl = (import.meta.env as any).VITE_WS_URL || defaultWs;
 
       try {

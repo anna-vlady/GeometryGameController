@@ -114,6 +114,14 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    log(`[PROUN Server] Port ${PORT} is already in use by an active server process. Continuing...`);
+  } else {
+    log(`[PROUN Server] Server error: ${err.message}`);
+  }
+});
+
 server.listen(Number(PORT), '0.0.0.0', () => {
   log(`[PROUN Server] Listening on http://0.0.0.0:${PORT} and ws://0.0.0.0:${PORT}`);
 });

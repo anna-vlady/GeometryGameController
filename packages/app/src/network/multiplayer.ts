@@ -12,8 +12,7 @@ export class MultiplayerClient {
       if (envUrl) {
         this.serverUrl = envUrl;
       } else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        this.serverUrl = `${proto}//${window.location.hostname}:8085`;
+        this.serverUrl = 'wss://geometrygamecontroller.onrender.com';
       } else {
         this.serverUrl = 'ws://localhost:8085';
       }
