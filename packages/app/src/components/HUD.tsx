@@ -120,10 +120,10 @@ export function HUD({ engine }: HUDProps) {
             pointerEvents: 'auto',
             transition: 'transform 0.1s ease, background-color 0.2s ease'
           }}
-          title="Открыть джойстик в отдельном окне браузера"
+          title="Open joystick in a separate browser window"
         >
           <span>🕹</span>
-          <span>ОТКРЫТЬ ДЖОЙСТИК ↗</span>
+          <span>OPEN CONTROLLER ↗</span>
         </button>
       </div>
 
@@ -173,7 +173,7 @@ export function HUD({ engine }: HUDProps) {
         }}>
           <span style={{ color: '#BF3B2B' }}>🤝</span>
           <span>{peerPilot.name}</span>
-          <span style={{ color: '#C99B3F' }}>({peerPilot.distM} м)</span>
+          <span style={{ color: '#C99B3F' }}>({peerPilot.distM}m)</span>
           <span style={{
             display: 'inline-block',
             transform: `rotate(${peerPilot.angleDeg}deg)`,
@@ -205,7 +205,7 @@ export function HUD({ engine }: HUDProps) {
         </div>
       )}
 
-      {/* Vertical Altimeter Scale (Высотомер) */}
+      {/* Vertical Altimeter Scale */}
       <div style={{
         position: 'absolute',
         top: '80px',
@@ -256,21 +256,21 @@ export function HUD({ engine }: HUDProps) {
 
       {/* Hint */}
       <div className="proun-hud-hint">
-        WASD — тяга · J-K — ритм Patapon (J-J-J-K) · M — звук · R — заново
+        WASD — Thrust · J-K — Patapon Rhythm (J-J-J-K) · M — Mute Audio · R — Restart
       </div>
 
-      {/* Финал: вершина */}
+      {/* Victory Overlay */}
       {won && (
         <div className="proun-overlay" style={{ pointerEvents: 'auto', cursor: 'default' }}>
-          <h1>РИТУАЛ<span className="red"> ВОСХОЖДЕНИЯ</span></h1>
+          <h1>RITUAL<span className="red"> OF ASCENT</span></h1>
           <div className="sub" style={{ marginBottom: 0 }}>
-            {engine.getLevelConfig().name} — ЗАВЕРШЁН
+            {engine.getLevelConfig().name} — COMPLETED
           </div>
           <div className="sub" style={{ marginTop: '12px' }}>
-            время подъёма — {Math.floor(climbSecs / 60)}:{String(climbSecs % 60).padStart(2, '0')}
+            climb time — {Math.floor(climbSecs / 60)}:{String(climbSecs % 60).padStart(2, '0')}
           </div>
           <div className="sub" style={{ marginTop: '6px', fontSize: '14px', opacity: 0.7 }}>
-            высота — {ALTITUDE_MAX} м · вершина горы Арарат
+            altitude — {ALTITUDE_MAX}m · Mount Ararat Summit
           </div>
           <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
             <button
@@ -288,10 +288,10 @@ export function HUD({ engine }: HUDProps) {
                 boxShadow: '0 4px 15px rgba(191,59,43,0.4)'
               }}
             >
-              🚀 ПЕРЕЙТИ НА СЛЕДУЮЩИЙ УРОВЕНЬ →
+              🚀 ADVANCE TO NEXT LEVEL →
             </button>
             <div className="start" style={{ fontSize: '12px', opacity: 0.7 }}>
-              R — начать заново этот уровень
+              R — restart this level
             </div>
           </div>
         </div>

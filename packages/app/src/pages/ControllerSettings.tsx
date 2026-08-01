@@ -101,10 +101,10 @@ export function ControllerSettings() {
       {/* Title */}
       <header style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '900', letterSpacing: '3px', margin: '0 0 8px 0' }}>
-          НАСТРОЙКА <span style={{ color: '#BF3B2B' }}>МОБИЛЬНОГО ДЖОЙСТИКА</span>
+          MOBILE <span style={{ color: '#BF3B2B' }}>CONTROLLER SETTINGS</span>
         </h1>
         <p style={{ color: 'rgba(30,27,22,0.65)', fontSize: '14px', margin: 0 }}>
-          Управление игрой с экрана любого смартфона через GeometryGameController
+          Control the game from any smartphone screen using GeometryGameController
         </p>
       </header>
 
@@ -124,7 +124,7 @@ export function ControllerSettings() {
           boxShadow: '0 8px 24px rgba(0,0,0,0.06)'
         }}>
           <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', borderBottom: '1px solid rgba(30,27,22,0.2)', paddingBottom: '8px' }}>
-            🔑 Код комнаты (PIN)
+            🔑 Room PIN Code
           </h2>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
@@ -156,7 +156,7 @@ export function ControllerSettings() {
                 fontSize: '12px'
               }}
             >
-              Новый PIN
+              New PIN
             </button>
           </div>
 
@@ -171,11 +171,11 @@ export function ControllerSettings() {
             color: connected ? '#2E7D32' : 'rgba(30,27,22,0.6)',
             border: '1px solid ' + (connected ? '#4CAF50' : 'rgba(30,27,22,0.2)')
           }}>
-            {connected ? '🟢 Мобильный джойстик подключен' : '⚪ Ожидание подключения джойстика...'}
+            {connected ? '🟢 Mobile Controller Connected' : '⚪ Waiting for controller connection...'}
           </div>
 
           <p style={{ fontSize: '13px', lineHeight: '1.5', color: 'rgba(30,27,22,0.8)', marginBottom: '16px' }}>
-            Откройте локальный джойстик на смартфоне или в браузере и выберите слот <b>Игрок 1-4</b>:
+            Open the controller on your smartphone or browser and select slot <b>Player 1-4</b>:
           </p>
 
           <a
@@ -196,7 +196,7 @@ export function ControllerSettings() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
             }}
           >
-            🕹 Открыть Мобильный Джойстик (Игрок 1–4)
+            🕹 Open Mobile Controller (Player 1–4)
           </a>
 
           <button
@@ -214,7 +214,7 @@ export function ControllerSettings() {
               boxShadow: '0 4px 12px rgba(191,59,43,0.3)'
             }}
           >
-            {copied ? '✓ Ссылка скопирована!' : '📋 Скопировать прямую ссылку на джойстик'}
+            {copied ? '✓ Link Copied!' : '📋 Copy Direct Controller Link'}
           </button>
         </div>
 
@@ -230,7 +230,7 @@ export function ControllerSettings() {
           alignItems: 'center'
         }}>
           <h2 style={{ fontSize: '18px', margin: '0 0 16px 0', width: '100%', borderBottom: '1px solid rgba(30,27,22,0.2)', paddingBottom: '8px' }}>
-            🕹 Интерактивный Тестер
+            🕹 Interactive Input Tester
           </h2>
 
           <canvas
@@ -258,7 +258,7 @@ export function ControllerSettings() {
                 cursor: 'pointer'
               }}
             >
-              Кнопка A (PATA)
+              Button A (PATA)
             </button>
             <button
               onMouseDown={() => { setLastButton('B (PON)'); setTestStick({ x: 0.6, y: 0.6 }); }}
@@ -273,13 +273,13 @@ export function ControllerSettings() {
                 cursor: 'pointer'
               }}
             >
-              Кнопка B (PON)
+              Button B (PON)
             </button>
           </div>
 
           {lastButton && (
             <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#BF3B2B' }}>
-              Нажато: {lastButton}
+              Pressed: {lastButton}
             </div>
           )}
         </div>
@@ -301,7 +301,7 @@ export function ControllerSettings() {
             boxShadow: '0 6px 16px rgba(0,0,0,0.15)'
           }}
         >
-          🚀 ВЕРНУТЬСЯ В ПОЛЁТ
+          🚀 RETURN TO FLIGHT
         </Link>
       </div>
     </div>

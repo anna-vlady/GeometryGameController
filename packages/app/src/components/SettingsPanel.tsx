@@ -64,7 +64,7 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
   if (!open) {
     return (
       <button className="proun-panel-toggle" onClick={() => setOpen(true)}>
-        Регуляторы
+        Controls &amp; Settings
       </button>
     );
   }
@@ -72,11 +72,11 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
   return (
     <div className="proun-panel">
       <div className="proun-panel-head" onClick={() => setOpen(false)}>
-          <span>Регуляторы</span>
+          <span>Controls &amp; Settings</span>
           <span className="tog">▾</span>
         </div>
 
-        <div className="proun-panel-section">Уровни &amp; Моды</div>
+        <div className="proun-panel-section">Levels &amp; Modes</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4px', marginBottom: '6px' }}>
           {[1, 2, 3, 4, 5].map((lvl) => (
             <button
@@ -93,12 +93,12 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
               }}
               onClick={() => handleSelectLevel(lvl)}
             >
-              Ур. {lvl}
+              Lvl {lvl}
             </button>
           ))}
         </div>
         <div style={{ marginBottom: '8px', fontSize: '10px', color: '#A09888', fontStyle: 'italic' }}>
-          {engine ? engine.getLevelConfig().name : `Уровень ${activeLevel}`}
+          {engine ? engine.getLevelConfig().name : `Level ${activeLevel}`}
         </div>
         <button
           style={{
@@ -115,16 +115,16 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
           }}
           onClick={handleTogglePrimitives}
         >
-          {usePrimitives ? '✦ Стиль: Чистые Примитивы' : '🎨 Стиль: Кастомное Оформление'}
+          {usePrimitives ? '✦ Style: Pure Primitives' : '🎨 Style: Custom Artwork'}
         </button>
 
-        <div className="proun-panel-section">Настройка Wi-Fi для QR-кода</div>
+        <div className="proun-panel-section">Wi-Fi QR Code Settings</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
           <div>
-            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Имя сети (SSID):</label>
+            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Network Name (SSID):</label>
             <input
               type="text"
-              defaultValue={localStorage.getItem('proun_wifi_ssid') || 'Proun-WiFi'}
+              defaultValue={localStorage.getItem('proun_wifi_ssid') || 'hosq_2floor'}
               onChange={(e) => {
                 localStorage.setItem('proun_wifi_ssid', e.target.value);
                 window.dispatchEvent(new Event('storage'));
@@ -133,21 +133,21 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
             />
           </div>
           <div>
-            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Пароль Wi-Fi:</label>
+            <label style={{ fontSize: '10px', color: '#A09888', display: 'block', marginBottom: '2px' }}>Wi-Fi Password:</label>
             <input
               type="text"
-              defaultValue={localStorage.getItem('proun_wifi_pass') || ''}
+              defaultValue={localStorage.getItem('proun_wifi_pass') || 'hosqhosq'}
               onChange={(e) => {
                 localStorage.setItem('proun_wifi_pass', e.target.value);
                 window.dispatchEvent(new Event('storage'));
               }}
-              placeholder="Пароль сети (если есть)"
+              placeholder="Network password (if any)"
               style={{ width: '100%', padding: '4px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(30,27,22,0.8)', color: '#FFF' }}
             />
           </div>
         </div>
 
-        <div className="proun-panel-section">Мир &amp; Джойстик</div>
+        <div className="proun-panel-section">World &amp; Controller</div>
 
         <div className="proun-seed-row" style={{ marginBottom: '8px' }}>
           <input
@@ -155,8 +155,8 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
             value={seed}
             onChange={(e) => setSeed(parseInt(e.target.value, 10) || 0)}
           />
-          <button className="proun-btn" onClick={handleRegenerate}>Обновить</button>
-          <button className="proun-btn" onClick={handleRandomSeed}>Случайно</button>
+          <button className="proun-btn" onClick={handleRegenerate}>Update</button>
+          <button className="proun-btn" onClick={handleRandomSeed}>Random</button>
         </div>
         <div style={{ marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <a
@@ -173,7 +173,7 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
               fontSize: '12px'
             }}
           >
-            📱 Настройка Мобильного Джойстика
+            📱 Mobile Controller Settings
           </a>
           <button
             onClick={() => window.open('/controller', '_blank', 'width=420,height=750,resizable=yes')}
@@ -189,32 +189,33 @@ export function SettingsPanel({ engine }: SettingsPanelProps) {
               cursor: 'pointer'
             }}
           >
-            🕹 Открыть Джойстик в Отдельном Окне ↗
+            🕹 Open Controller in New Window ↗
           </button>
         </div>
 
-      <div className="proun-panel-section">Звук</div>
+      <div className="proun-panel-section">Audio</div>
       <div className="proun-ctl">
-        <label>Мастер <b>{masterVol}</b></label>
+        <label>Master <b>{masterVol}</b></label>
         <input type="range" min={0} max={100} value={masterVol}
           onChange={(e) => handleMasterVol(parseInt(e.target.value, 10))} />
       </div>
       <div className="proun-ctl thumb-ink">
-        <label>Объекты <b>{objVol}</b></label>
+        <label>Objects <b>{objVol}</b></label>
         <input type="range" min={0} max={150} value={objVol}
           onChange={(e) => handleObjVol(parseInt(e.target.value, 10))} />
       </div>
       <div className="proun-ctl thumb-blue">
-        <label>Игрок <b>{plrVol}</b></label>
+        <label>Player <b>{plrVol}</b></label>
         <input type="range" min={0} max={150} value={plrVol}
           onChange={(e) => handlePlrVol(parseInt(e.target.value, 10))} />
       </div>
       <div className="proun-ctl thumb-ochre">
-        <label>Плотность частиц <b>{particles}%</b></label>
+        <label>Particle Density <b>{particles}%</b></label>
         <input type="range" min={20} max={300} value={particles}
           onChange={(e) => handleParticles(parseInt(e.target.value, 10))} />
       </div>
 
+      <div className="proun-panel-section">Gravity &amp; Physics</div>
       {Object.entries(params).map(([k, v]) => (
         <div key={k} className="proun-ctl">
           <label>{k} <b>{v.toFixed(k.includes('GRAV') && v > 100 ? 0 : 2)}</b></label>

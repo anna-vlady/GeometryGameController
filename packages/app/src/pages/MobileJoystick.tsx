@@ -54,9 +54,10 @@ export function MobileJoystick() {
       if (isCleanedUp) return;
 
       const hostname = window.location.hostname || 'localhost';
-      const wsUrl = window.location.protocol === 'https:'
-        ? 'wss://proun-server.onrender.com'
+      const defaultWs = window.location.protocol === 'https:'
+        ? `wss://${hostname}`
         : `ws://${hostname}:8085`;
+      const wsUrl = (import.meta.env as any).VITE_WS_URL || defaultWs;
 
       try {
         setConnectionState('connecting');
@@ -238,19 +239,19 @@ export function MobileJoystick() {
             GEOMETRY GAME CONTROLLER
           </div>
           <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#2B2D31', margin: '0 0 20px 0' }}>
-            ВЫБЕРИТЕ <span style={{ color: '#D84234' }}>ИГРОКА</span>
+            SELECT <span style={{ color: '#D84234' }}>PLAYER</span>
           </h1>
 
           <p style={{ fontSize: '13px', color: '#8C8A82', lineHeight: '1.5', marginBottom: '24px' }}>
-            Нажмите номер слота вашего пилота для моментального подключения джойстика:
+            Select your pilot slot number to connect joystick:
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
             {[
-              { num: 1, color: '#D84234', label: '🔴 ИГРОК 1' },
-              { num: 2, color: '#2B2D31', label: '⬛ ИГРОК 2' },
-              { num: 3, color: '#C99B3F', label: '🟡 ИГРОК 3' },
-              { num: 4, color: '#3F5666', label: '🔵 ИГРОК 4' },
+              { num: 1, color: '#D84234', label: '🔴 PLAYER 1' },
+              { num: 2, color: '#2B2D31', label: '⬛ PLAYER 2' },
+              { num: 3, color: '#C99B3F', label: '🟡 PLAYER 3' },
+              { num: 4, color: '#3F5666', label: '🔵 PLAYER 4' },
             ].map(p => (
               <button
                 key={p.num}
@@ -275,7 +276,7 @@ export function MobileJoystick() {
           </div>
 
           <div style={{ borderTop: '1px solid #E5E2D8', paddingTop: '16px' }}>
-            <div style={{ fontSize: '11px', color: '#8C8A82', marginBottom: '8px' }}>Или введите кастомный PIN комнаты:</div>
+            <div style={{ fontSize: '11px', color: '#8C8A82', marginBottom: '8px' }}>Or enter custom room PIN:</div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
@@ -306,7 +307,7 @@ export function MobileJoystick() {
                   cursor: 'pointer'
                 }}
               >
-                ОК
+                OK
               </button>
             </div>
           </div>

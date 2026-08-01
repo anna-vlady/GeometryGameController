@@ -27,7 +27,7 @@ export function Game() {
       />
 
       <div className="proun-title-tag">
-        ПРОУН<b>&nbsp;//&nbsp;</b>ЗАВОДНАЯ ОРНИТОЛОГИЯ
+        PROUN<b>&nbsp;//&nbsp;</b>CLOCKWORK ORNITHOLOGY
       </div>
 
       {/* HUD Container */}

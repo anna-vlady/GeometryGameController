@@ -86,7 +86,7 @@ export function CornerQRCodes() {
             border: '1.5px solid #1E1B16',
             display: 'flex'
           }}
-          title={`Подключение к Wi-Fi: ${ssid}`}
+          title={`Connect to Wi-Fi: ${ssid}`}
         >
           <QRCodeSVG
             value={wifiQrString}
@@ -116,7 +116,7 @@ export function CornerQRCodes() {
             gap: '3px'
           }}
         >
-          <span style={{ color: '#BF3B2B' }}>🕹</span> ДЖОЙСТИК
+          <span style={{ color: '#BF3B2B' }}>🕹</span> CONTROLLER
         </div>
         <div
           style={{
@@ -126,7 +126,7 @@ export function CornerQRCodes() {
             border: '1.5px solid #1E1B16',
             display: 'flex'
           }}
-          title={`Открыть джойстик: ${controllerUrl}`}
+          title={`Open Controller: ${controllerUrl}`}
         >
           <QRCodeSVG
             value={controllerUrl}
