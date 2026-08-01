@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
 export function MobileJoystick() {
-  const [selectedPlayer, setSelectedPlayer] = useState<number | null>(null);
+  const [selectedPlayer, setSelectedPlayer] = useState<number | null>(1);
   const [customRoom, setCustomRoom] = useState<string>('');
   const [connectionState, setConnectionState] = useState<'connecting' | 'online' | 'offline'>('connecting');
   const [activeBtn, setActiveBtn] = useState<'A' | 'B' | null>(null);
