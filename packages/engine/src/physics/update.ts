@@ -20,7 +20,7 @@ export function updateEngine(engine: ProunEngine, dt: number) {
   const activeSlots = engine.slots && engine.slots.length > 0
     ? engine.slots.filter(s => s.active)
     : [{
-        slotId: 'SLOT-1', num: 1, name: 'Игрок 1', color: '#BF3B2B', active: true, connected: false,
+        slotId: 'SLOT-1', num: 1, name: 'PLAYER 1', color: '#BF3B2B', active: true, connected: false,
         player: engine.player, tanks: engine.tanks, collectFlash: engine.collectFlash,
         remoteStick: (engine as any).remoteStick || { x: 0, y: 0 },
         boostTimer: 0, magnetTimer: 0

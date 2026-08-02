@@ -570,7 +570,7 @@ export class Renderer {
 
     const activeSlots = slots && slots.length > 0
       ? slots.filter((s: any) => s.active)
-      : [{ num: 1, name: 'Игрок 1', color: '#BF3B2B', player, tanks, collectFlash }];
+      : [{ num: 1, name: 'PLAYER 1', color: '#BF3B2B', player, tanks, collectFlash }];
 
     const camX = activeSlots.reduce((acc: number, s: any) => acc + s.player.x, 0) / activeSlots.length;
     const camY = activeSlots.reduce((acc: number, s: any) => acc + s.player.y, 0) / activeSlots.length;
@@ -783,8 +783,6 @@ export class Renderer {
         ctx.fillStyle = CREAM; ctx.strokeStyle = INK; ctx.lineWidth = 2.5;
         ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke();
 
-        ctx.fillStyle = INK; ctx.font = '700 11px sans-serif'; ctx.textAlign = 'center';
-        ctx.fillText(np.name || np.id, 0, -28);
 
         const tanksArr = np.tanks || [6, 6, 6, 6];
         for (let i = 0; i < 4; i++) {
@@ -1148,24 +1146,6 @@ export class Renderer {
         ctx.restore();
       }
 
-      // 3. High-Contrast Player Slot Badge (P1 / P2 / P3 / P4)
-      ctx.save();
-      ctx.fillStyle = slotColor;
-      ctx.beginPath();
-      if ((ctx as any).roundRect) {
-        (ctx as any).roundRect(p.x - 15, p.y - 36, 30, 16, 8);
-      } else {
-        ctx.rect(p.x - 15, p.y - 36, 30, 16);
-      }
-      ctx.fill();
-      ctx.strokeStyle = INK;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.fillStyle = '#F9F7F1';
-      ctx.font = '900 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`P${slot.num}`, p.x, p.y - 24);
-      ctx.restore();
 
       for (let i = 0; i < 4; i++) {
         if (sFlash[i] < 0.04) continue;

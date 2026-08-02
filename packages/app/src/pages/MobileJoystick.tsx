@@ -541,7 +541,7 @@ export function MobileJoystick() {
 
           {/* Status LED Dot (Green when connected, Red when disconnected) */}
           <div
-            title={connectionState === 'online' ? 'Подключено' : connectionState === 'connecting' ? 'Подключение...' : 'Не подключено'}
+            title={connectionState === 'online' ? 'Connected' : connectionState === 'connecting' ? 'Connecting...' : 'Disconnected'}
             style={{
               width: '12px',
               height: '12px',

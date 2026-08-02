@@ -119,7 +119,7 @@ export class ProunEngine {
     this.slots = [1, 2, 3, 4].map(num => ({
       slotId: `SLOT-${num}`,
       num,
-      name: `Игрок ${num}`,
+      name: `PLAYER ${num}`,
       color: slotColors[num - 1],
       active: num === 1,
       connected: false,
