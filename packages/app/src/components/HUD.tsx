@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ProunEngine, SPAWN, ALTITUDE_MAX } from '@proun/engine';
+import { ProunEngine, SPAWN, ALTITUDE_MAX, levelRegistry } from '@proun/engine';
 import { CornerQRCodes } from './CornerQRCodes';
 
 interface HUDProps {
@@ -11,10 +11,28 @@ export function HUD({ engine }: HUDProps) {
   const [won, setWon] = useState(false);
   const [climbSecs, setClimbSecs] = useState(0);
   const [peerPilot, setPeerPilot] = useState<{ name: string; distM: number; angleDeg: number } | null>(null);
+  const [activeLevel, setActiveLevel] = useState<number>(engine ? engine.getLevelId() : 1);
   const rafRef = useRef<number>(0);
+
+  const allLevels = levelRegistry.getAllConfigs();
+
+  const handleSelectLevel = (lvlId: number) => {
+    if (!engine) return;
+    setActiveLevel(lvlId);
+    engine.setLevel(lvlId);
+    engine.restart();
+  };
+
+  const getArtistName = (lvlId: number) => {
+    if (lvlId === 1) return 'misak samokatian';
+    if (lvlId === 2 || lvlId === 3 || lvlId === 4) return 'anna ghazaryan vladimirskaya';
+    const cfg = levelRegistry.getLevelConfig(lvlId);
+    return cfg ? cfg.artist.toLowerCase() : 'grisha tsvetkov';
+  };
 
   useEffect(() => {
     if (!engine) return;
+    setActiveLevel(engine.getLevelId());
 
     const tick = () => {
       setAltitude(Math.round(Math.max(0, (SPAWN.y - engine.player.y) / 10)));
@@ -62,70 +80,85 @@ export function HUD({ engine }: HUDProps) {
       {/* Permanent Corner QR Codes (Wi-Fi & Controller) */}
       <CornerQRCodes />
 
-      {/* Connected Controllers Badges (SLOT 1–4) & Controller Launch Button */}
+      {/* Title Branding Tag, Level Selection Buttons & Artist Text */}
       <div style={{
         position: 'absolute',
-        top: '20px',
-        left: '260px',
+        top: '16px',
+        left: '22px',
         display: 'flex',
-        alignItems: 'center',
+        flexDirection: 'column',
         gap: '8px',
         pointerEvents: 'auto',
         zIndex: 10
       }}>
-        {engine.slots && engine.slots.map(s => {
-          const slotColor = engine ? engine.getLevelConfig().palette.energyColors[(s.num - 1) % 4] : s.color;
-          return (
-            <div key={s.slotId} style={{
-              background: s.active ? 'rgba(30,27,22,0.88)' : 'rgba(30,27,22,0.35)',
-              color: '#E7DFCC',
-              padding: '5px 12px',
-              borderRadius: '16px',
-              fontSize: '11px',
-              fontWeight: '900',
-              letterSpacing: '1px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-              opacity: s.active ? 1 : 0.6
-            }}>
-              <span style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: s.connected ? '#4CAF50' : slotColor
-              }} />
-              <span>{s.name}</span>
-            </div>
-          );
-        })}
-
-        <button
-          onClick={() => window.open('/#/controller?player=1', '_blank', 'width=420,height=750,resizable=yes')}
-          style={{
-            background: 'rgba(30,27,22,0.88)',
-            color: '#E7DFCC',
-            border: '1px solid rgba(255,255,255,0.25)',
-            padding: '5px 12px',
-            borderRadius: '16px',
-            fontSize: '11px',
-            fontWeight: '900',
-            letterSpacing: '1px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
-            cursor: 'pointer',
-            pointerEvents: 'auto',
-            transition: 'transform 0.1s ease, background-color 0.2s ease'
-          }}
-          title="Open joystick in a separate browser window"
-        >
-          <span>🕹</span>
-          <span>OPEN CONTROLLER ↗</span>
-        </button>
+        <div className="proun-title-tag" style={{ position: 'static' }}>
+          PROUN<b>&nbsp;//&nbsp;</b>CLOCKWORK ORNITHOLOGY
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {allLevels.map((cfg) => {
+            const isActive = activeLevel === cfg.id;
+            return (
+              <button
+                key={cfg.id}
+                onClick={() => handleSelectLevel(cfg.id)}
+                style={{
+                  background: isActive ? '#BF3B2B' : 'rgba(30, 27, 22, 0.75)',
+                  color: isActive ? '#FFFFFF' : '#E7DFCC',
+                  border: isActive ? '1px solid #BF3B2B' : '1px solid rgba(255, 255, 255, 0.25)',
+                  padding: '4px 10px',
+                  borderRadius: '4px',
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  letterSpacing: '1px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  transition: 'all 0.15s ease'
+                }}
+                title={cfg.name}
+              >
+                LVL {cfg.id}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{
+          fontSize: '11px',
+          fontWeight: '700',
+          letterSpacing: '0.5px',
+          color: 'rgba(30, 27, 22, 0.75)',
+          marginTop: '2px'
+        }}>
+          artist: {getArtistName(activeLevel)}
+        </div>
       </div>
+
+      {/* Open Controller Emoticon Button (Top Right next to Map Altimeter) */}
+      <button
+        onClick={() => window.open('/#/controller?player=1', '_blank', 'width=420,height=750,resizable=yes')}
+        style={{
+          position: 'absolute',
+          top: '76px',
+          right: '60px',
+          background: 'rgba(30,27,22,0.88)',
+          color: '#E7DFCC',
+          border: '1px solid rgba(255,255,255,0.25)',
+          width: '32px',
+          height: '32px',
+          borderRadius: '50%',
+          fontSize: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 4px 10px rgba(0,0,0,0.18)',
+          cursor: 'pointer',
+          pointerEvents: 'auto',
+          zIndex: 15,
+          transition: 'transform 0.1s ease, background 0.2s ease'
+        }}
+        title="Open Controller Joystick ↗"
+      >
+        🕹
+      </button>
 
       {/* Tanks for all active local players */}
       <div style={{ position: 'absolute', bottom: '26px', left: '26px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -187,8 +220,8 @@ export function HUD({ engine }: HUDProps) {
       {engine.comboFlash > 0 && (
         <div style={{
           position: 'absolute',
-          top: '70px',
-          left: '26px',
+          top: '80px',
+          left: '22px',
           color: engine.comboFeedback.includes('PON') ? (engine ? engine.getLevelConfig().palette.ochre : '#C99B3F') : (engine ? engine.getLevelConfig().palette.red : '#BF3B2B'),
           fontSize: engine.comboFeedback.includes('REZONANCE') ? '16px' : '20px',
           fontWeight: '900',
@@ -299,4 +332,5 @@ export function HUD({ engine }: HUDProps) {
     </div>
   );
 }
+
 

@@ -3,7 +3,7 @@ import { LevelConfig } from './levelConfig';
 export const LEVEL_4_CONFIG: LevelConfig = {
   id: 4,
   name: 'Уровень 4: ASCII Aquarium Tank',
-  artist: 'ASCII Aquarium',
+  artist: 'Anna Ghazaryan Vladimirskaya',
   usePrimitives: false,
   targetAltitude: 5165,
   palette: {

@@ -3,7 +3,7 @@ import { LevelConfig } from './levelConfig';
 export const LEVEL_2_CONFIG: LevelConfig = {
   id: 2,
   name: 'Уровень 2: Neon Night Club',
-  artist: 'Neon Cyber Artist',
+  artist: 'Anna Ghazaryan Vladimirskaya',
   usePrimitives: true,
   targetAltitude: 5165,
   palette: {
