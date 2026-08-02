@@ -24,8 +24,8 @@ export function CornerQRCodes() {
     <div
       style={{
         position: 'absolute',
-        top: '16px',
-        right: '60px',
+        bottom: '24px',
+        right: '65px',
         background: '#E7DFCC',
         border: '2px solid #1E1B16',
         borderRadius: '8px',
