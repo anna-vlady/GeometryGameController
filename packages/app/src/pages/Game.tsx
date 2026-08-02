@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useEngine } from '../hooks/useEngine';
 import { HUD } from '../components/HUD';
+import { SettingsPanel } from '../components/SettingsPanel';
 import { MultiplayerClient } from '../network/multiplayer';
 
 export function Game() {
@@ -23,9 +24,13 @@ export function Game() {
         style={{ width: '100%', height: '100%', display: 'block' }}
       />
 
+      <div className="proun-title-tag">
+        PROUN<b>&nbsp;//&nbsp;</b>CLOCKWORK ORNITHOLOGY
+      </div>
+
       {/* HUD Container */}
       <HUD engine={engine} />
+      <SettingsPanel engine={engine} />
     </div>
   );
 }
-

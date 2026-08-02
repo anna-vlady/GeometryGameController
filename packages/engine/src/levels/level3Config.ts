@@ -3,7 +3,7 @@ import { LevelConfig } from './levelConfig';
 export const LEVEL_3_CONFIG: LevelConfig = {
   id: 3,
   name: 'Уровень 3: Enchanted Pastel Forest',
-  artist: 'Anna Ghazaryan Vladimirskaya',
+  artist: 'Botanical Cyber Artist',
   usePrimitives: false,
   targetAltitude: 5165,
   palette: {

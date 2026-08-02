@@ -3,7 +3,7 @@ import { LevelConfig } from './levelConfig';
 export const LEVEL_1_CONFIG: LevelConfig = {
   id: 1,
   name: 'Уровень 1: Заводная Орнитология (Супрематизм)',
-  artist: 'Misak Samokatian',
+  artist: 'PROUN Original',
   usePrimitives: false,
   targetAltitude: 5165,
   palette: {

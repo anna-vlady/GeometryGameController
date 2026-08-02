@@ -2,8 +2,8 @@ import { LevelConfig } from './levelConfig';
 
 export const LEVEL_5_CONFIG: LevelConfig = {
   id: 5,
-  name: 'Уровень 5: Примитивы (Художник 4)',
-  artist: 'Художник 4',
+  name: 'Уровень 5: Примитивы',
+  artist: 'grisha tsvet',
   usePrimitives: true,
   targetAltitude: 5165,
   palette: {
@@ -28,5 +28,5 @@ export const LEVEL_5_CONFIG: LevelConfig = {
     drive: [2.2, 1.7, 2.1, 1.4]
   },
   assetsDir: '/assets/levels/level-5/',
-  description: 'Пятый уровень. Мод от Художника 4.'
+  description: 'Пятый уровень. Мод от Grisha Tsvet.'
 };
